@@ -89,14 +89,14 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "lista_familia" "\0"
-            VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "lista_familia" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "lista_familia.exe" "\0"
-            VALUE "ProductName", "lista_familia" "\0"
-            VALUE "ProductVersion", VERSION_AS_STRING "\0"
+VALUE "CompanyName", "Biel Montero Román" "\0"
+             VALUE "FileDescription", "Lista Familia" "\0"
+             VALUE "FileVersion", VERSION_AS_STRING "\0"
+             VALUE "InternalName", "Lista Familia" "\0"
+             VALUE "LegalCopyright", "Copyright (C) 2026 Biel Montero Román. All rights reserved." "\0"
+             VALUE "OriginalFilename", "Lista Familia.exe" "\0"
+             VALUE "ProductName", "Lista Familia" "\0"
+             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
     BLOCK "VarFileInfo"

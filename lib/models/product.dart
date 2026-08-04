@@ -5,7 +5,7 @@ class Product {
   int quantity;
   final String createdBy;
   final DateTime createdAt;
-  int order;
+  int position;
 
   Product({
     required this.id,
@@ -14,7 +14,7 @@ class Product {
     this.quantity = 1,
     required this.createdBy,
     required this.createdAt,
-    this.order = 0,
+    this.position = 0,
   });
 
   factory Product.fromMap(Map<String, dynamic> map) {
@@ -27,7 +27,7 @@ class Product {
       createdAt: map['created_at'] != null
           ? DateTime.parse(map['created_at'] as String)
           : DateTime.now(),
-      order: map['order'] as int? ?? 0,
+      position: map['position'] as int? ?? 0,
     );
   }
 
@@ -39,7 +39,7 @@ class Product {
       'quantity': quantity,
       'created_by': createdBy,
       'created_at': createdAt.toIso8601String(),
-      'order': order,
+      'position': position,
     };
   }
 
@@ -47,7 +47,7 @@ class Product {
     String? name,
     bool? isChecked,
     int? quantity,
-    int? order,
+    int? position,
   }) {
     return Product(
       id: id,
@@ -56,7 +56,7 @@ class Product {
       quantity: quantity ?? this.quantity,
       createdBy: createdBy,
       createdAt: createdAt,
-      order: order ?? this.order,
+      position: position ?? this.position,
     );
   }
 }

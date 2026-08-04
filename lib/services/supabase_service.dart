@@ -34,7 +34,7 @@ class SupabaseService {
     return client
         .from('products')
         .stream(primaryKey: ['id'])
-        .order('order', ascending: true)
+        .order('position', ascending: true)
         .map((rows) => rows.map((row) => Product.fromMap(row)).toList());
   }
 
@@ -42,7 +42,7 @@ class SupabaseService {
     final response = await client
         .from('products')
         .select()
-        .order('order', ascending: true);
+        .order('position', ascending: true);
     return (response as List).map((row) => Product.fromMap(row)).toList();
   }
 
@@ -56,7 +56,7 @@ class SupabaseService {
       'quantity': 1,
       'created_by': createdBy,
       'created_at': now,
-      'order': count,
+      'position': count,
     };
     final response = await client.from('products').insert(data).select().maybeSingle();
     if (response == null) {
@@ -73,8 +73,8 @@ class SupabaseService {
     await client.from('products').update({'quantity': quantity}).eq('id', id);
   }
 
-  Future<void> updateOrder(String id, int order) async {
-    await client.from('products').update({'order': order}).eq('id', id);
+  Future<void> updatePosition(String id, int position) async {
+    await client.from('products').update({'position': position}).eq('id', id);
   }
 
   Future<void> updateProduct(String id, String name, int quantity) async {

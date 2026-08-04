@@ -45,7 +45,7 @@ await SupabaseService.instance.initialize(
 | quantity      | integer   | No       | 1           |
 | created_by    | text      | Yes      |             |
 | created_at    | timestamp | Yes      | now()       |
-| order         | integer   | No       | 0           |
+| position      | integer   | No       | 0           |
 
 5. Haz clic en **Save**
 
@@ -62,7 +62,7 @@ create table products (
   quantity integer not null default 1,
   created_by text,
   created_at timestamp default now(),
-  order integer not null default 0
+  position integer not null default 0
 );
 
 alter publication supabase_realtime add table products;
@@ -70,13 +70,13 @@ alter publication supabase_realtime add table products;
 
 3. Haz clic en **Run**
 
-### Si la tabla ya existe: añadir columnas quantity y order
+### Si la tabla ya existe: añadir columnas quantity y position
 
-Si ya tienes la tabla `products` creada sin las columnas `quantity` y `order`, ejecuta este SQL en el **Query Editor**:
+Si ya tienes la tabla `products` creada sin las columnas `quantity` y `position`, ejecuta este SQL en el **Query Editor**:
 
 ```sql
 alter table products add column quantity integer not null default 1;
-alter table products add column order integer not null default 0;
+alter table products add column position integer not null default 0;
 ```
 
 ## 5. Habilitar Realtime (sincronización en tiempo real)

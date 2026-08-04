@@ -1,11 +1,11 @@
 {
-    "name": "lista_familia",
-    "short_name": "lista_familia",
+    "name": "Lista Familia",
+    "short_name": "Lista Familia",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Lista de la compra para la familia Montero Román. Permite la sincronización de la lista entre toda la familia.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

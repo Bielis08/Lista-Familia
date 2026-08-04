@@ -276,7 +276,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     try {
       for (int i = 0; i < _products.length; i++) {
-        await _service.updateOrder(_products[i].id, i);
+        await _service.updatePosition(_products[i].id, i);
       }
     } catch (e) {
       _loadProducts();
