@@ -35,20 +35,21 @@ class SupabaseService {
         .from('products')
         .stream(primaryKey: ['id'])
         .order('position', ascending: true)
-        .map((rows) => rows.map((row) => Product.fromMap(row)).toList());
+        .map((rows) => rows.map(Product.fromMap).toList());
   }
 
   Future<List<Product>> getProducts() async {
     final response = await client
         .from('products')
         .select()
-        .order('position', ascending: true);
-    return (response as List).map((row) => Product.fromMap(row)).toList();
+        .order('position', ascending: true) as List<dynamic>;
+    return response.map((row) => Product.fromMap(row as Map<String, dynamic>)).toList();
   }
 
   Future<Product> addProduct(String name, String createdBy) async {
     final now = DateTime.now().toIso8601String();
-    final count = await client.from('products').select().count();
+    final countResponse = await client.from('products').select('id');
+    final count = countResponse.length;
     final data = {
       'id': DateTime.now().millisecondsSinceEpoch.toString(),
       'name': name,
@@ -67,6 +68,10 @@ class SupabaseService {
 
   Future<void> toggleProduct(String id, bool isChecked) async {
     await client.from('products').update({'is_checked': isChecked}).eq('id', id);
+  }
+
+  Future<void> toggleImportant(String id, bool isImportant) async {
+    await client.from('products').update({'is_important': isImportant}).eq('id', id);
   }
 
   Future<void> updateQuantity(String id, int quantity) async {

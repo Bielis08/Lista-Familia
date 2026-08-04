@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import '../models/product.dart';
 import '../services/supabase_service.dart';
 import '../widgets/product_item.dart';
@@ -17,28 +18,57 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Product> _products = [];
   bool _isLoading = true;
   bool _isAdding = false;
+  bool _isViewMode = true;
+  bool _isConnected = true;
   StreamSubscription<List<Product>>? _subscription;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
 
   @override
   void initState() {
     super.initState();
     _loadProducts();
     _subscribeToChanges();
+    try {
+      _setupConnectivity();
+    } catch (e) {
+      debugPrint('Connectivity init error: $e');
+    }
   }
 
   @override
   void dispose() {
     _subscription?.cancel();
+    _connectivitySubscription?.cancel();
     _controller.dispose();
     super.dispose();
   }
 
-  void _subscribeToChanges() {
-    _subscription = _service.watchProducts().listen((products) {
-      if (mounted) {
-        setState(() => _products = products);
+  void _setupConnectivity() {
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((results) {
+      final connected = results.any((r) => r != ConnectivityResult.none);
+      if (mounted && _isConnected != connected) {
+        setState(() => _isConnected = connected);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(connected ? 'Conexión restaurada' : 'Sin conexión a internet'),
+            backgroundColor: connected ? Colors.green : Colors.orange,
+            duration: const Duration(seconds: 2),
+          ),
+        );
       }
     });
+  }
+
+  void _subscribeToChanges() {
+    try {
+      _subscription = _service.watchProducts().listen((products) {
+        if (mounted) {
+          setState(() => _products = products);
+        }
+      });
+    } catch (e) {
+      debugPrint('Watch products error: $e');
+    }
   }
 
   Future<void> _loadProducts() async {
@@ -82,6 +112,21 @@ class _HomeScreenState extends State<HomeScreen> {
       await _service.toggleProduct(product.id, newState);
     } catch (e) {
       setState(() => product.isChecked = !newState);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al actualizar: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _toggleImportant(Product product) async {
+    final newState = !product.isImportant;
+    setState(() => product.isImportant = newState);
+    try {
+      await _service.toggleImportant(product.id, newState);
+    } catch (e) {
+      setState(() => product.isImportant = !newState);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al actualizar: $e')),
@@ -290,48 +335,94 @@ class _HomeScreenState extends State<HomeScreen> {
 
   int get _checkedCount => _products.where((p) => p.isChecked).length;
 
-  @override
+@override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Lista de la Compra'),
         actions: [
-          if (_products.isNotEmpty)
-            PopupMenuButton<String>(
-              onSelected: (value) {
-                if (value == 'delete_checked') _uncheckAll();
-                if (value == 'delete_all') {
-                  Future.delayed(Duration.zero, () => _confirmDeleteAll());
-                }
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'delete_checked',
-                  child: Row(
-                    children: [
-                      Icon(Icons.check_circle_outline, size: 20),
-                      SizedBox(width: 8),
-                      Text('Desmarcar todos los marcados'),
-                    ],
-                  ),
+          Row(
+            children: [
+              Icon(
+                _isViewMode ? Icons.visibility : Icons.edit,
+                size: 20,
+                color: Colors.white70,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                _isViewMode ? 'Ver' : 'Editar',
+                style: const TextStyle(fontSize: 13, color: Colors.white70),
+              ),
+              Switch(
+                value: !_isViewMode,
+                onChanged: (value) => setState(() => _isViewMode = !value),
+                activeThumbColor: Colors.white,
+                activeTrackColor: Colors.green.shade400,
+                inactiveThumbColor: Colors.white,
+                inactiveTrackColor: Colors.grey.shade400,
+              ),
+            ],
+          ),
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'delete_checked') {
+                _uncheckAll();
+              } else if (value == 'delete_all') {
+                Future.delayed(Duration.zero, _confirmDeleteAll);
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'delete_checked',
+                child: Row(
+                  children: [
+                    Icon(Icons.check_circle_outline, size: 20),
+                    SizedBox(width: 8),
+                    Text('Desmarcar todos los marcados'),
+                  ],
                 ),
-                const PopupMenuItem(
-                  value: 'delete_all',
-                  child: Row(
-                    children: [
-                      Icon(Icons.delete_sweep, size: 20),
-                      SizedBox(width: 8),
-                      Text('Eliminar todo'),
-                    ],
-                  ),
+              ),
+              PopupMenuItem(
+                value: 'delete_all',
+                enabled: !_isViewMode,
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.delete_sweep,
+                      size: 20,
+                      color: _isViewMode ? Colors.grey : Colors.red,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _isViewMode ? 'Eliminar todo (bloqueado)' : 'Eliminar todo',
+                    ),
+                  ],
                 ),
-              ],
-              icon: const Icon(Icons.more_vert),
-            ),
+              ),
+            ],
+            icon: const Icon(Icons.more_vert),
+          ),
         ],
       ),
       body: Column(
         children: [
+          if (!_isConnected)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              color: Colors.orange.shade100,
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.wifi_off, size: 16, color: Colors.orange),
+                  SizedBox(width: 8),
+                  Text(
+                    'Sin conexión - los cambios se sincronizarán al reconectar',
+                    style: TextStyle(color: Colors.orange, fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.all(12.0),
             child: Row(
@@ -339,8 +430,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 Expanded(
                   child: TextField(
                     controller: _controller,
+                    enabled: !_isViewMode,
                     decoration: InputDecoration(
-                      hintText: 'Añadir producto...',
+                      hintText: _isViewMode ? 'Modo vista' : 'Añadir producto...',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -353,7 +445,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton(
-                  onPressed: _addProduct,
+                  onPressed: _isViewMode ? null : _addProduct,
                   style: ElevatedButton.styleFrom(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -409,24 +501,48 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                   ),
-                  Expanded(
-                    child: ReorderableListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      itemCount: _products.length,
-                      onReorderItem: _reorderProducts,
-                      itemBuilder: (context, index) {
-                        final product = _products[index];
-                        return ProductItem(
-                          key: ValueKey(product.id),
-                          product: product,
-                          onToggle: () => _toggleProduct(product),
-                          onDelete: () => _deleteProduct(product.id),
-                          onEdit: () => _editProduct(product),
-                          onQuantityDecrease: () => _decreaseQuantity(product),
-                          onQuantityIncrease: () => _increaseQuantity(product),
-                        );
-                      },
-                    ),
+Expanded(
+                    child: _isViewMode
+                        ? RefreshIndicator(
+                            onRefresh: _loadProducts,
+                            child: ListView.builder(
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              itemCount: _products.length,
+                              itemBuilder: (context, index) {
+                                final product = _products[index];
+                                return ProductItem(
+                                  key: ValueKey(product.id),
+                                  product: product,
+                                  onToggle: () => _toggleProduct(product),
+                                  onToggleImportant: () => _toggleImportant(product),
+                                  onDelete: () => _deleteProduct(product.id),
+                                  onEdit: () => _editProduct(product),
+                                  onQuantityDecrease: () => _decreaseQuantity(product),
+                                  onQuantityIncrease: () => _increaseQuantity(product),
+                                  isViewMode: _isViewMode,
+                                );
+                              },
+                            ),
+                          )
+                        : ReorderableListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            itemCount: _products.length,
+                            onReorderItem: _reorderProducts,
+                            itemBuilder: (context, index) {
+                              final product = _products[index];
+                              return ProductItem(
+                                key: ValueKey(product.id),
+                                product: product,
+                                onToggle: () => _toggleProduct(product),
+                                onToggleImportant: () => _toggleImportant(product),
+                                onDelete: () => _deleteProduct(product.id),
+                                onEdit: () => _editProduct(product),
+                                onQuantityDecrease: () => _decreaseQuantity(product),
+                                onQuantityIncrease: () => _increaseQuantity(product),
+                                isViewMode: _isViewMode,
+                              );
+                            },
+                          ),
                   ),
                 ],
               ),

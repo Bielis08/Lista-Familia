@@ -17,14 +17,19 @@
 
 ## 3. Configurar las claves en la app
 
-Abre el archivo `lib/main.dart` y reemplaza las credenciales de ejemplo:
+Las credenciales se pasan como variables de entorno al compilar:
 
-```dart
-await SupabaseService.instance.initialize(
-  url: 'YOUR_SUPABASE_URL',
-  publishableKey: 'YOUR_SUPABASE_PUBLISHABLE_KEY',
-);
+```bash
+flutter run --dart-define=SUPABASE_URL=YOUR_URL --dart-define=SUPABASE_KEY=YOUR_KEY
 ```
+
+Para builds de release:
+
+```bash
+flutter build apk --dart-define=SUPABASE_URL=YOUR_URL --dart-define=SUPABASE_KEY=YOUR_KEY
+```
+
+Si no se pasan las variables, se usan los valores por defecto en `lib/main.dart`.
 
 ## 4. Crear la tabla `products`
 
@@ -59,6 +64,7 @@ create table products (
   id text primary key,
   name text not null,
   is_checked boolean not null default false,
+  is_important boolean not null default false,
   quantity integer not null default 1,
   created_by text,
   created_at timestamp default now(),
@@ -70,13 +76,14 @@ alter publication supabase_realtime add table products;
 
 3. Haz clic en **Run**
 
-### Si la tabla ya existe: añadir columnas quantity y position
+### Si la tabla ya existe: añadir columnas quantity, position e is_important
 
-Si ya tienes la tabla `products` creada sin las columnas `quantity` y `position`, ejecuta este SQL en el **Query Editor**:
+Si ya tienes la tabla `products` creada sin las columnas `quantity`, `position` o `is_important`, ejecuta este SQL en el **Query Editor**:
 
 ```sql
-alter table products add column quantity integer not null default 1;
-alter table products add column position integer not null default 0;
+alter table products add column if not exists quantity integer not null default 1;
+alter table products add column if not exists position integer not null default 0;
+alter table products add column if not exists is_important boolean not null default false;
 ```
 
 ## 5. Habilitar Realtime (sincronización en tiempo real)

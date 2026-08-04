@@ -1,4 +1,4 @@
-package com.example.lista_familia
+package com.bielmontero.lista_familia
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -2,6 +2,7 @@ class Product {
   final String id;
   String name;
   bool isChecked;
+  bool isImportant;
   int quantity;
   final String createdBy;
   final DateTime createdAt;
@@ -11,6 +12,7 @@ class Product {
     required this.id,
     required this.name,
     this.isChecked = false,
+    this.isImportant = false,
     this.quantity = 1,
     required this.createdBy,
     required this.createdAt,
@@ -22,6 +24,7 @@ class Product {
       id: map['id'] as String,
       name: map['name'] as String,
       isChecked: map['is_checked'] as bool? ?? false,
+      isImportant: map['is_important'] as bool? ?? false,
       quantity: map['quantity'] as int? ?? 0,
       createdBy: map['created_by'] as String? ?? '',
       createdAt: map['created_at'] != null
@@ -36,6 +39,7 @@ class Product {
       'id': id,
       'name': name,
       'is_checked': isChecked,
+      'is_important': isImportant,
       'quantity': quantity,
       'created_by': createdBy,
       'created_at': createdAt.toIso8601String(),
@@ -46,6 +50,7 @@ class Product {
   Product copyWith({
     String? name,
     bool? isChecked,
+    bool? isImportant,
     int? quantity,
     int? position,
   }) {
@@ -53,6 +58,7 @@ class Product {
       id: id,
       name: name ?? this.name,
       isChecked: isChecked ?? this.isChecked,
+      isImportant: isImportant ?? this.isImportant,
       quantity: quantity ?? this.quantity,
       createdBy: createdBy,
       createdAt: createdAt,

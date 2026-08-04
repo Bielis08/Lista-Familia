@@ -1,9 +1,8 @@
 name: lista_familia
 description: "Lista de la compra para la familia Montero Román. Permite la sincronización de la lista entre toda la familia."
 publish_to: 'none'
-version: 0.5.0+1
+version: 1.0.0+1
 
-author: Biel Montero Román <bielmonteroroman08@gmail.com>
 homepage: https://github.com/Bielis08/Lista-Familia
 repository: https://github.com/Bielis08/Lista-Familia
 license: MIT
@@ -23,7 +22,7 @@ dependencies:
 
   cupertino_icons: ^1.0.8
   supabase_flutter: ^2.5.0
-  uuid: ^4.4.0
+  connectivity_plus: ^6.1.0
 
 dev_dependencies:
   flutter_test:
@@ -35,6 +34,12 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/app_icon.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

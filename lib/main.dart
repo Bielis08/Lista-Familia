@@ -4,10 +4,24 @@ import 'services/supabase_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await SupabaseService.instance.initialize(
-    url: 'https://gjkmrlaiipzabpuvwfyr.supabase.co',
-    publishableKey: 'sb_publishable_AqSsDfU6pKgRH7IkNosxnQ_TSxtJCac',
+
+  const supabaseUrl = String.fromEnvironment(
+    'SUPABASE_URL',
+    defaultValue: 'https://gjkmrlaiipzabpuvwfyr.supabase.co',
   );
+  const supabaseKey = String.fromEnvironment(
+    'SUPABASE_KEY',
+    defaultValue: 'sb_publishable_AqSsDfU6pKgRH7IkNosxnQ_TSxtJCac',
+  );
+
+  try {
+    await SupabaseService.instance.initialize(
+      url: supabaseUrl,
+      publishableKey: supabaseKey,
+    );
+  } catch (e) {
+    debugPrint('Supabase init error: $e');
+  }
   runApp(const MyApp());
 }
 
