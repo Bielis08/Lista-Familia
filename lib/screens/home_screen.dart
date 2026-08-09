@@ -71,6 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) setState(() => _syncStatus = status);
     });
 
+    _isConnected = widget.repository.isConnected;
     _pendingCount = widget.repository.pendingCount;
     _syncStatus = widget.repository.syncStatus;
   }

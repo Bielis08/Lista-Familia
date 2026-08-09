@@ -26,9 +26,21 @@ class SyncService {
   SyncService(AppDatabase db)
       : _local = LocalProductRepository(db),
         _remote = RemoteProductRepository() {
-    _setupConnectivity();
+    _initConnectivity();
     _setupRealtime();
     _startPeriodicSync();
+  }
+
+  Future<void> _initConnectivity() async {
+    try {
+      final results = await Connectivity().checkConnectivity();
+      _isConnected = results.any((r) => r != ConnectivityResult.none);
+      _connectivityController.add(_isConnected);
+    } catch (_) {
+      _isConnected = true;
+    }
+    _setupConnectivity();
+    await _updatePendingCount();
   }
 
   void _setupConnectivity() {
