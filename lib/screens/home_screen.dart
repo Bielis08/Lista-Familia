@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../repositories/product_repository_impl.dart';
 import '../services/sync_service.dart';
+import '../services/update_service.dart';
 import '../widgets/product_item.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -16,6 +17,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _controller = TextEditingController();
+  final UpdateService _updateService = UpdateService();
   List<Product> _products = [];
   bool _isLoading = true;
   bool _isAdding = false;
@@ -352,6 +354,30 @@ class _HomeScreenState extends State<HomeScreen> {
 
   int get _checkedCount => _products.where((p) => p.isChecked).length;
 
+  Future<void> _checkForUpdate() async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Buscando actualizaciones...'),
+        duration: Duration(seconds: 1),
+      ),
+    );
+
+    final release = await _updateService.checkForUpdate();
+
+    if (mounted) {
+      if (release != null) {
+        UpdateService.showUpdateDialog(context, release, _updateService);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Ya tienes la última versión'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    }
+  }
+
   Widget _buildSyncStatusBar() {
     Color bgColor;
     Color textColor;
@@ -437,6 +463,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 _uncheckAll();
               } else if (value == 'delete_all') {
                 Future.delayed(Duration.zero, _confirmDeleteAll);
+              } else if (value == 'check_update') {
+                _checkForUpdate();
               }
             },
             itemBuilder: (context) => [
@@ -464,6 +492,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(
                       _isViewMode ? 'Eliminar todo (bloqueado)' : 'Eliminar todo',
                     ),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'check_update',
+                child: Row(
+                  children: [
+                    Icon(Icons.system_update_outlined, size: 20),
+                    SizedBox(width: 10),
+                    Text('Buscar actualizaciones'),
                   ],
                 ),
               ),
