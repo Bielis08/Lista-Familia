@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:open_file/open_file.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -9,11 +10,13 @@ class GithubRelease {
   final String version;
   final String? releaseNote;
   final String apkUrl;
+  final String assetId;
 
   GithubRelease({
     required this.version,
     this.releaseNote,
     required this.apkUrl,
+    required this.assetId,
   });
 }
 
@@ -22,6 +25,11 @@ class UpdateService {
   static const String _repositoryGithub = 'Lista-Familia';
   static const String _apiUrl =
       'https://api.github.com/repos/$_ownerGithub/$_repositoryGithub/releases/latest';
+
+  static const String _githubToken = String.fromEnvironment(
+    'GITHUB_TOKEN',
+    defaultValue: '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',
+  );
 
   final Dio _dio = Dio();
 
@@ -35,7 +43,10 @@ class UpdateService {
       final response = await _dio.get<Map<String, dynamic>>(
         _apiUrl,
         options: Options(
-          headers: {'Accept': 'application/vnd.github.v3+json'},
+          headers: {
+            'Accept': 'application/vnd.github.v3+json',
+            if (_githubToken.isNotEmpty) 'Authorization': 'token $_githubToken',
+          },
         ),
       );
 
@@ -49,16 +60,18 @@ class UpdateService {
       final releaseNote = data['body'] as String?;
 
       String? apkUrl;
+      String? assetId;
       final assets = data['assets'] as List<dynamic>? ?? [];
       for (final asset in assets) {
         final name = asset['name'] as String? ?? '';
         if (name.endsWith('.apk')) {
           apkUrl = asset['browser_download_url'] as String?;
+          assetId = asset['id']?.toString();
           break;
         }
       }
 
-      if (apkUrl == null || version.isEmpty) return null;
+      if (apkUrl == null || assetId == null || version.isEmpty) return null;
 
       final currentVersion = await getCurrentVersion();
       if (!_isNewerVersion(version, currentVersion)) return null;
@@ -67,6 +80,7 @@ class UpdateService {
         version: version,
         releaseNote: releaseNote,
         apkUrl: apkUrl,
+        assetId: assetId,
       );
     } catch (e) {
       debugPrint('Error checking for updates: $e');
@@ -92,16 +106,25 @@ class UpdateService {
   }
 
   Future<String?> downloadApk(
-    String url,
+    String assetId,
     void Function(double progress)? onProgress,
   ) async {
     try {
       final dir = await getTemporaryDirectory();
       final filePath = '${dir.path}/update.apk';
 
+      final downloadUrl =
+          'https://api.github.com/repos/$_ownerGithub/$_repositoryGithub/releases/assets/$assetId';
+
       await _dio.download(
-        url,
+        downloadUrl,
         filePath,
+        options: Options(
+          headers: {
+            'Accept': 'application/octet-stream',
+            if (_githubToken.isNotEmpty) 'Authorization': 'token $_githubToken',
+          },
+        ),
         onReceiveProgress: (received, total) {
           if (total > 0 && onProgress != null) {
             onProgress(received / total);
@@ -118,8 +141,8 @@ class UpdateService {
 
   Future<bool> installApk(String filePath) async {
     try {
-      final result = await Process.run('pm', ['install', '-r', filePath]);
-      return result.exitCode == 0;
+      final result = await OpenFile.open(filePath);
+      return result.type == ResultType.done;
     } catch (e) {
       debugPrint('Error installing APK: $e');
       return false;
@@ -159,7 +182,7 @@ class _UpdateDialogState extends State<_UpdateDialogWidget> {
     setState(() => _isDownloading = true);
 
     final filePath = await widget.service.downloadApk(
-      widget.release.apkUrl,
+      widget.release.assetId,
       (progress) {
         if (mounted) setState(() => _progress = progress);
       },
