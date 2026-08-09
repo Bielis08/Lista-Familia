@@ -1,65 +1,84 @@
 # Lista Familia
 
-Lista de la compra para la familia Montero Román. Permite la sincronización de la lista entre toda la familia.
+Lista de la compra para la familia Montero Román. Funciona offline en el supermercado y sincroniza en tiempo real cuando hay conexión.
 
 ## Features
 
-- Añadir productos a la lista de la compra
-- Marcar productos como comprados
-- Editar nombre y cantidad de productos
-- Eliminar productos individuales o todos los marcados
-- Control de cantidades (incrementar / decrementar)
-- Sincronización en tiempo real con Supabase para toda la familia
+- **Offline-first**: Funciona sin internet, los cambios se guardan localmente
+- **Sync en tiempo real**: Cambios aparecen al instante en otros dispositivos vía Supabase Realtime
+- **Indicadores visuales**: Barra de estado muestra: conectado, sincronizando, pendiente, offline
+- Añadir/editar/eliminar productos
+- Marcar como comprados
+- Control de cantidades
+- Reordenar productos (arrastrar)
+- Modo vista (solo lectura) / modo edición
+
+## Arquitectura
+
+```
+UI (Flutter) → ProductRepository → Local DB (Drift/SQLite) ←→ Supabase (REST + Realtime)
+                                         ↑
+                                    SyncService
+                              (push dirty + pull realtime)
+```
+
+- **Local-first**: Todo se escribe en SQLite primero (UI instantánea)
+- **Push**: Productos `dirty=true` se suben a Supabase (1 llamada REST por producto)
+- **Pull**: Supabase Realtime escucha cambios → upsert a SQLite
+- **Fallback**: Sync periódico cada 30s si Realtime falla
 
 ## Getting Started
 
 ### Prerequisites
-
 - Flutter SDK (3.x+)
-- Dart SDK
-- A Supabase account
+- Supabase account (free tier)
 
 ### Installation
-
-1. Clone the repository:
 
 ```bash
 git clone https://github.com/Bielis08/Lista-Familia.git
 cd Lista-Familia
-```
-
-2. Install dependencies:
-
-```bash
 flutter pub get
 ```
 
-3. Configure Supabase:
-
-Open `lib/main.dart` and update the Supabase URL and publishable key with your own project credentials.
-
-4. Run the app:
+### Run
 
 ```bash
 flutter run
 ```
 
+### Build APK
+
+```bash
+flutter build apk --dart-define=SUPABASE_URL=YOUR_URL --dart-define=SUPABASE_KEY=YOUR_KEY
+```
+
 ## Supabase Setup
 
-This app uses Supabase as its backend. The `products` table should have the following columns:
+See [SUPABASE_SETUP.md](SUPABASE_SETUP.md) for full SQL and configuration.
 
-| Column       | Type    | Notes                    |
-|-------------|---------|--------------------------|
-| id          | text    | Primary key              |
-| name        | text    | Product name             |
-| is_checked  | boolean | Default: false           |
-| quantity    | integer | Default: 1               |
-| created_by  | text    | User who added the item  |
-| created_at  | text    | ISO 8601 timestamp       |
+**Quick SQL:**
+```sql
+CREATE TABLE products (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  is_checked BOOLEAN DEFAULT FALSE,
+  is_important BOOLEAN DEFAULT FALSE,
+  quantity INTEGER DEFAULT 1,
+  created_by TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  position INTEGER DEFAULT 0
+);
+
+ALTER PUBLICATION supabase_realtime ADD TABLE products;
+ALTER TABLE products ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow all" ON products FOR ALL USING (true) WITH CHECK (true);
+```
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+MIT License - See [LICENSE](LICENSE)
 
 ## Author
 

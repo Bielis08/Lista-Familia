@@ -66,22 +66,6 @@ class SupabaseService {
     return Product.fromMap(response);
   }
 
-  Future<void> toggleProduct(String id, bool isChecked) async {
-    await client.from('products').update({'is_checked': isChecked}).eq('id', id);
-  }
-
-  Future<void> toggleImportant(String id, bool isImportant) async {
-    await client.from('products').update({'is_important': isImportant}).eq('id', id);
-  }
-
-  Future<void> updateQuantity(String id, int quantity) async {
-    await client.from('products').update({'quantity': quantity}).eq('id', id);
-  }
-
-  Future<void> updatePosition(String id, int position) async {
-    await client.from('products').update({'position': position}).eq('id', id);
-  }
-
   Future<void> updateProduct(String id, String name, int quantity) async {
     await client.from('products').update({
       'name': name,
@@ -89,15 +73,23 @@ class SupabaseService {
     }).eq('id', id);
   }
 
+  Future<void> updateAll(String id, {
+    required String name,
+    required bool isChecked,
+    required bool isImportant,
+    required int quantity,
+    required int position,
+  }) async {
+    await client.from('products').update({
+      'name': name,
+      'is_checked': isChecked,
+      'is_important': isImportant,
+      'quantity': quantity,
+      'position': position,
+    }).eq('id', id);
+  }
+
   Future<void> deleteProduct(String id) async {
     await client.from('products').delete().eq('id', id);
-  }
-
-  Future<void> deleteCheckedProducts() async {
-    await client.from('products').delete().eq('is_checked', true);
-  }
-
-  Future<void> deleteAllProducts() async {
-    await client.from('products').delete().neq('id', '');
   }
 }

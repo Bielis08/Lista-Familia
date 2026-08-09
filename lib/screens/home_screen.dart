@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import '../models/product.dart';
-import '../services/supabase_service.dart';
+import '../repositories/product_repository_impl.dart';
+import '../services/sync_service.dart';
 import '../widgets/product_item.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final ProductRepositoryImpl repository;
+
+  const HomeScreen({super.key, required this.repository});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -14,38 +16,39 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _controller = TextEditingController();
-  final SupabaseService _service = SupabaseService.instance;
   List<Product> _products = [];
   bool _isLoading = true;
   bool _isAdding = false;
   bool _isViewMode = true;
   bool _isConnected = true;
+  int _pendingCount = 0;
+  SyncStatus _syncStatus = SyncStatus.idle;
   StreamSubscription<List<Product>>? _subscription;
-  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+  StreamSubscription<bool>? _connectivitySubscription;
+  StreamSubscription<int>? _pendingSubscription;
+  StreamSubscription<SyncStatus>? _statusSubscription;
 
   @override
   void initState() {
     super.initState();
     _loadProducts();
     _subscribeToChanges();
-    try {
-      _setupConnectivity();
-    } catch (e) {
-      debugPrint('Connectivity init error: $e');
-    }
+    _setupConnectivity();
+    _setupSyncStatus();
   }
 
   @override
   void dispose() {
     _subscription?.cancel();
     _connectivitySubscription?.cancel();
+    _pendingSubscription?.cancel();
+    _statusSubscription?.cancel();
     _controller.dispose();
     super.dispose();
   }
 
   void _setupConnectivity() {
-    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((results) {
-      final connected = results.any((r) => r != ConnectivityResult.none);
+    _connectivitySubscription = widget.repository.onConnectivityChanged.listen((connected) {
       if (mounted && _isConnected != connected) {
         setState(() => _isConnected = connected);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -59,9 +62,22 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void _setupSyncStatus() {
+    _pendingSubscription = widget.repository.onPendingChanged.listen((count) {
+      if (mounted) setState(() => _pendingCount = count);
+    });
+
+    _statusSubscription = widget.repository.onStatusChanged.listen((status) {
+      if (mounted) setState(() => _syncStatus = status);
+    });
+
+    _pendingCount = widget.repository.pendingCount;
+    _syncStatus = widget.repository.syncStatus;
+  }
+
   void _subscribeToChanges() {
     try {
-      _subscription = _service.watchProducts().listen((products) {
+      _subscription = widget.repository.watchProducts().listen((products) {
         if (mounted) {
           setState(() => _products = products);
         }
@@ -74,7 +90,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadProducts() async {
     setState(() => _isLoading = true);
     try {
-      final products = await _service.getProducts();
+      final products = await widget.repository.getAll();
       if (mounted) setState(() => _products = products);
     } catch (e) {
       if (mounted) {
@@ -92,7 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (name.isEmpty || _isAdding) return;
     setState(() => _isAdding = true);
     try {
-      await _service.addProduct(name, 'Usuario');
+      await widget.repository.addProduct(name, 'Usuario');
       if (mounted) _controller.clear();
     } catch (e) {
       if (mounted) {
@@ -109,7 +125,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final newState = !product.isChecked;
     setState(() => product.isChecked = newState);
     try {
-      await _service.toggleProduct(product.id, newState);
+      await widget.repository.toggleProduct(product.id, newState);
     } catch (e) {
       setState(() => product.isChecked = !newState);
       if (mounted) {
@@ -124,7 +140,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final newState = !product.isImportant;
     setState(() => product.isImportant = newState);
     try {
-      await _service.toggleImportant(product.id, newState);
+      await widget.repository.toggleImportant(product.id, newState);
     } catch (e) {
       setState(() => product.isImportant = !newState);
       if (mounted) {
@@ -140,7 +156,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final newQty = product.quantity - 1;
     setState(() => product.quantity = newQty);
     try {
-      await _service.updateQuantity(product.id, newQty);
+      await widget.repository.updateQuantity(product.id, newQty);
     } catch (e) {
       setState(() => product.quantity = product.quantity + 1);
       if (mounted) {
@@ -155,7 +171,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final newQty = product.quantity + 1;
     setState(() => product.quantity = newQty);
     try {
-      await _service.updateQuantity(product.id, newQty);
+      await widget.repository.updateQuantity(product.id, newQty);
     } catch (e) {
       setState(() => product.quantity = product.quantity - 1);
       if (mounted) {
@@ -224,7 +240,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     try {
-      await _service.updateProduct(product.id, newName, newQuantity);
+      await widget.repository.updateProduct(product.id, newName, newQuantity);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -238,7 +254,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final removed = _products.where((p) => p.id == id).toList();
     setState(() => _products.removeWhere((p) => p.id == id));
     try {
-      await _service.deleteProduct(id);
+      await widget.repository.deleteProduct(id);
     } catch (e) {
       setState(() => _products.addAll(removed));
       if (mounted) {
@@ -258,7 +274,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     try {
       for (var product in checkedProducts) {
-        await _service.toggleProduct(product.id, false);
+        await widget.repository.toggleProduct(product.id, false);
       }
     } catch (e) {
       setState(() {
@@ -302,7 +318,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final all = List<Product>.from(_products);
     setState(() => _products.clear());
     try {
-      await _service.deleteAllProducts();
+      await widget.repository.deleteAllProducts();
     } catch (e) {
       setState(() => _products = all);
       if (mounted) {
@@ -321,7 +337,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     try {
       for (int i = 0; i < _products.length; i++) {
-        await _service.updatePosition(_products[i].id, i);
+        await widget.repository.updatePosition(_products[i].id, i);
       }
     } catch (e) {
       _loadProducts();
@@ -334,6 +350,61 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   int get _checkedCount => _products.where((p) => p.isChecked).length;
+
+  Widget _buildSyncStatusBar() {
+    Color bgColor;
+    Color textColor;
+    IconData icon;
+    String text;
+
+    if (!_isConnected) {
+      bgColor = const Color(0xFFFFF3E0);
+      textColor = const Color(0xFFEF6C00);
+      icon = Icons.wifi_off_rounded;
+      text = 'Sin conexión - se sincronizará al reconectar';
+    } else if (_syncStatus == SyncStatus.syncing) {
+      bgColor = const Color(0xFFE3F2FD);
+      textColor = const Color(0xFF1976D2);
+      icon = Icons.sync_rounded;
+      text = 'Sincronizando...';
+    } else if (_pendingCount > 0) {
+      bgColor = const Color(0xFFFFF8E1);
+      textColor = const Color(0xFFF9A825);
+      icon = Icons.cloud_upload_outlined;
+      text = '$_pendingCount cambios pendientes de subir';
+    } else {
+      bgColor = const Color(0xFFE8F5E9);
+      textColor = const Color(0xFF2E7D32);
+      icon = Icons.cloud_done_outlined;
+      text = 'Todo sincronizado';
+    }
+
+    return Container(
+      width: double.infinity,
+      height: 32,
+      color: bgColor,
+      child: Center(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_syncStatus == SyncStatus.syncing)
+              SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(strokeWidth: 2, color: textColor),
+              )
+            else
+              Icon(icon, size: 14, color: textColor),
+            const SizedBox(width: 6),
+            Text(
+              text,
+              style: TextStyle(color: textColor, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
 @override
   Widget build(BuildContext context) {
@@ -402,23 +473,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: Column(
         children: [
-          if (!_isConnected)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              color: const Color(0xFFFFF3E0),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.wifi_off_rounded, size: 16, color: Color(0xFFEF6C00)),
-                  SizedBox(width: 8),
-                  Text(
-                    'Sin conexión - se sincronizará al reconectar',
-                    style: TextStyle(color: Color(0xFFEF6C00), fontSize: 13),
-                  ),
-                ],
-              ),
-            ),
+          _buildSyncStatusBar(),
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
             child: Row(

@@ -1,7 +1,7 @@
 name: lista_familia
 description: "Lista de la compra para la familia Montero Román. Permite la sincronización de la lista entre toda la familia."
 publish_to: 'none'
-version: 1.5.0+1
+version: 2.0.0+1
 
 homepage: https://github.com/Bielis08/Lista-Familia
 repository: https://github.com/Bielis08/Lista-Familia
@@ -23,6 +23,10 @@ dependencies:
   cupertino_icons: ^1.0.8
   supabase_flutter: ^2.5.0
   connectivity_plus: ^6.1.0
+  drift: ^2.18.0
+  sqlite3_flutter_libs: ^0.5.0
+  path_provider: ^2.1.0
+  path: ^1.9.0
 
 dev_dependencies:
   flutter_test:
@@ -35,6 +39,8 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.4
+  drift_dev: ^2.18.0
+  build_runner: ^2.4.0
 
 flutter_launcher_icons:
   android: true

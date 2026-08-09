@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
 import 'services/supabase_service.dart';
+import 'database/app_database.dart';
+import 'repositories/product_repository_impl.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,11 +24,28 @@ void main() async {
   } catch (e) {
     debugPrint('Supabase init error: $e');
   }
-  runApp(const MyApp());
+
+  final db = AppDatabase();
+  final repository = ProductRepositoryImpl.getInstance(db: db);
+
+  // Initial migration: populate local DB from Supabase if empty
+  try {
+    final count = await db.productDao.count();
+    if (count == 0) {
+      final remoteProducts = await repository.getAll();
+      await repository.local.syncFromRemote(remoteProducts);
+    }
+  } catch (e) {
+    debugPrint('Migration error: $e');
+  }
+
+  runApp(MyApp(repository: repository));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final ProductRepositoryImpl repository;
+
+  const MyApp({super.key, required this.repository});
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +73,7 @@ class MyApp extends StatelessWidget {
           margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         ),
       ),
-      home: const HomeScreen(),
+      home: HomeScreen(repository: repository),
     );
   }
 }
