@@ -140,7 +140,7 @@ class ProductDao extends DatabaseAccessor<AppDatabase> with _$ProductDaoMixin {
         dirty: const Value(true),
         deleted: Value(deleted),
         lastModified: Value(now),
-        userId: Value('local_user'),
+        userId: const Value('local_user'),
       ),
     );
   }
@@ -152,7 +152,7 @@ class ProductDao extends DatabaseAccessor<AppDatabase> with _$ProductDaoMixin {
         position: Value(position),
         dirty: const Value(true),
         lastModified: Value(now),
-        userId: Value('local_user'),
+        userId: const Value('local_user'),
       ),
     );
   }
@@ -168,7 +168,7 @@ class ProductDao extends DatabaseAccessor<AppDatabase> with _$ProductDaoMixin {
     final companion = ProductTableCompanion(
       dirty: const Value(true),
       lastModified: Value(now),
-      userId: Value('local_user'),
+      userId: const Value('local_user'),
       name: name != null ? Value(name) : const Value.absent(),
       quantity: quantity != null ? Value(quantity) : const Value.absent(),
       isChecked: isChecked != null ? Value(isChecked) : const Value.absent(),
@@ -184,7 +184,7 @@ class ProductDao extends DatabaseAccessor<AppDatabase> with _$ProductDaoMixin {
         deleted: const Value(true),
         dirty: const Value(true),
         lastModified: Value(now),
-        userId: Value('local_user'),
+        userId: const Value('local_user'),
       ),
     );
   }

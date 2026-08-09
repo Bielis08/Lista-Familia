@@ -32,9 +32,9 @@ void main() {
       dirty: Value(dirty),
       deleted: Value(deleted),
       lastModified: Value(DateTime.now()),
-      createdBy: Value('test_user'),
+      createdBy: const Value('test_user'),
       createdAt: Value(DateTime.now()),
-      userId: Value('test_user'),
+      userId: const Value('test_user'),
     ));
   }
 
