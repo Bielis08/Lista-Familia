@@ -339,29 +339,25 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF2E7D32), Color(0xFF388E3C)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         title: const Text('Lista de la Compra'),
         actions: [
-          Row(
-            children: [
-              Icon(
-                _isViewMode ? Icons.visibility : Icons.edit,
-                size: 20,
-                color: Colors.white70,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                _isViewMode ? 'Ver' : 'Editar',
-                style: const TextStyle(fontSize: 13, color: Colors.white70),
-              ),
-              Switch(
-                value: !_isViewMode,
-                onChanged: (value) => setState(() => _isViewMode = !value),
-                activeThumbColor: Colors.white,
-                activeTrackColor: Colors.green.shade400,
-                inactiveThumbColor: Colors.white,
-                inactiveTrackColor: Colors.grey.shade400,
-              ),
-            ],
+          IconButton(
+            icon: Icon(
+              _isViewMode ? Icons.visibility_outlined : Icons.edit_outlined,
+              color: Colors.white,
+              size: 22,
+            ),
+            onPressed: () => setState(() => _isViewMode = !_isViewMode),
+            tooltip: _isViewMode ? 'Modo edición' : 'Modo vista',
           ),
           PopupMenuButton<String>(
             onSelected: (value) {
@@ -377,8 +373,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Row(
                   children: [
                     Icon(Icons.check_circle_outline, size: 20),
-                    SizedBox(width: 8),
-                    Text('Desmarcar todos los marcados'),
+                    SizedBox(width: 10),
+                    Text('Desmarcar todos'),
                   ],
                 ),
               ),
@@ -388,11 +384,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Row(
                   children: [
                     Icon(
-                      Icons.delete_sweep,
+                      Icons.delete_sweep_outlined,
                       size: 20,
                       color: _isViewMode ? Colors.grey : Colors.red,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     Text(
                       _isViewMode ? 'Eliminar todo (bloqueado)' : 'Eliminar todo',
                     ),
@@ -400,7 +396,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ],
-            icon: const Icon(Icons.more_vert),
+            icon: const Icon(Icons.more_vert, color: Colors.white),
           ),
         ],
       ),
@@ -409,50 +405,69 @@ class _HomeScreenState extends State<HomeScreen> {
           if (!_isConnected)
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              color: Colors.orange.shade100,
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              color: const Color(0xFFFFF3E0),
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.wifi_off, size: 16, color: Colors.orange),
+                  Icon(Icons.wifi_off_rounded, size: 16, color: Color(0xFFEF6C00)),
                   SizedBox(width: 8),
                   Text(
-                    'Sin conexión - los cambios se sincronizarán al reconectar',
-                    style: TextStyle(color: Colors.orange, fontSize: 13),
+                    'Sin conexión - se sincronizará al reconectar',
+                    style: TextStyle(color: Color(0xFFEF6C00), fontSize: 13),
                   ),
                 ],
               ),
             ),
           Padding(
-            padding: const EdgeInsets.all(12.0),
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _controller,
                     enabled: !_isViewMode,
+                    style: const TextStyle(fontSize: 15),
                     decoration: InputDecoration(
                       hintText: _isViewMode ? 'Modo vista' : 'Añadir producto...',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                      hintStyle: TextStyle(color: Colors.grey.shade400),
+                      border: InputBorder.none,
                       filled: true,
-                      fillColor: Colors.grey.shade100,
-                      prefixIcon: const Icon(Icons.add_shopping_cart),
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      prefixIcon: Icon(
+                        Icons.shopping_cart_outlined,
+                        color: Colors.grey.shade400,
+                        size: 20,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: Colors.grey.shade200),
+                      ),
+                      disabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: Colors.grey.shade200),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(color: Color(0xFF66BB6A), width: 1.5),
+                      ),
                     ),
                     onSubmitted: (_) => _addProduct(),
                   ),
                 ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: _isViewMode ? null : _addProduct,
-                  style: ElevatedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                const SizedBox(width: 10),
+                GestureDetector(
+                  onTap: _isViewMode ? null : _addProduct,
+                  child: Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      color: _isViewMode ? Colors.grey.shade300 : const Color(0xFF43A047),
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: const Icon(Icons.add, color: Colors.white, size: 24),
                   ),
-                  child: const Icon(Icons.add),
                 ),
               ],
             ),
@@ -467,11 +482,32 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.shopping_cart, size: 64, color: Colors.grey.shade400),
-                    const SizedBox(height: 16),
+                    Container(
+                      width: 100,
+                      height: 100,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFE8F5E9),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.shopping_cart_outlined,
+                        size: 48,
+                        color: Color(0xFF66BB6A),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Tu lista está vacía',
+                      style: TextStyle(
+                        color: Color(0xFF424242),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
                     Text(
-                      'No hay productos en la lista',
-                      style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
+                      'Añade tu primer producto',
+                      style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
                     ),
                   ],
                 ),
@@ -482,20 +518,32 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                     child: Row(
                       children: [
                         Text(
                           '${_products.length} productos',
-                          style: TextStyle(color: Colors.grey.shade600),
+                          style: TextStyle(
+                            color: Colors.grey.shade500,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                         const Spacer(),
                         if (_checkedCount > 0)
-                          Text(
-                            '$_checkedCount marcados',
-                            style: TextStyle(
-                              color: Colors.green.shade700,
-                              fontWeight: FontWeight.w600,
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE8F5E9),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              '$_checkedCount marcados',
+                              style: const TextStyle(
+                                color: Color(0xFF2E7D32),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                       ],
@@ -506,7 +554,7 @@ Expanded(
                         ? RefreshIndicator(
                             onRefresh: _loadProducts,
                             child: ListView.builder(
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              padding: const EdgeInsets.only(top: 4, bottom: 80),
                               itemCount: _products.length,
                               itemBuilder: (context, index) {
                                 final product = _products[index];
@@ -525,7 +573,7 @@ Expanded(
                             ),
                           )
                         : ReorderableListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            padding: const EdgeInsets.only(top: 4, bottom: 80),
                             itemCount: _products.length,
                             onReorderItem: _reorderProducts,
                             itemBuilder: (context, index) {
