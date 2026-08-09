@@ -586,8 +586,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         const Spacer(),
-                        if (_checkedCount > 0)
-                          Container(
+                        Opacity(
+                          opacity: _checkedCount > 0 ? 1.0 : 0.0,
+                          child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                             decoration: BoxDecoration(
                               color: const Color(0xFFE8F5E9),
@@ -602,6 +603,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                           ),
+                        ),
                       ],
                     ),
                   ),
