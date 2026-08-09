@@ -7,13 +7,14 @@ Lista de la compra para la familia Montero Román. Funciona offline en el superm
 - **Offline-first**: Funciona sin internet, los cambios se guardan localmente
 - **Sync en tiempo real**: Cambios aparecen al instante en otros dispositivos vía Supabase Realtime
 - **Indicadores visuales**: Barra de estado muestra: conectado, sincronizando, pendiente, offline
+- **Múltiples listas**: Supermercado, Fruta y Verdura, o crea las tuyas propias
 - Añadir/editar/eliminar productos
 - Marcar como comprados
 - Control de cantidades
 - Reordenar productos (arrastrar)
 - Modo vista (solo lectura) / modo edición
 
-## Arquitectura
+## Architecture
 
 ```
 UI (Flutter) → ProductRepository → Local DB (Drift/SQLite) ←→ Supabase (REST + Realtime)
@@ -55,25 +56,30 @@ flutter build apk --dart-define=SUPABASE_URL=YOUR_URL --dart-define=SUPABASE_KEY
 
 ## Supabase Setup
 
-See [SUPABASE_SETUP.md](SUPABASE_SETUP.md) for full SQL and configuration.
+See `supabase/migrations/002_add_lists.sql` for the full SQL migration.
 
 **Quick SQL:**
 ```sql
-CREATE TABLE products (
+-- Lists table
+CREATE TABLE lists (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
-  is_checked BOOLEAN DEFAULT FALSE,
-  is_important BOOLEAN DEFAULT FALSE,
-  quantity INTEGER DEFAULT 1,
-  created_by TEXT DEFAULT '',
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  position INTEGER DEFAULT 0
+  icon TEXT DEFAULT '',
+  position INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-ALTER PUBLICATION supabase_realtime ADD TABLE products;
-ALTER TABLE products ENABLE ROW LEVEL SECURITY;
+ALTER PUBLICATION supabase_realtime ADD TABLE lists;
+ALTER TABLE lists ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all" ON lists FOR ALL USING (true) WITH CHECK (true);
 
-CREATE POLICY "Allow all" ON products FOR ALL USING (true) WITH CHECK (true);
+-- Add list_id to products
+ALTER TABLE products ADD COLUMN list_id TEXT NOT NULL DEFAULT 'supermercado';
+
+-- Default lists
+INSERT INTO lists (id, name, icon, position) VALUES
+  ('supermercado', 'Supermercado', '🛒', 0),
+  ('fruta-verdura', 'Fruta y Verdura', '🥬', 1);
 ```
 
 ## License

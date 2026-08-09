@@ -8,8 +8,17 @@ import '../widgets/product_item.dart';
 
 class HomeScreen extends StatefulWidget {
   final ProductRepositoryImpl repository;
+  final String listId;
+  final String listName;
+  final String listIcon;
 
-  const HomeScreen({super.key, required this.repository});
+  const HomeScreen({
+    super.key,
+    required this.repository,
+    this.listId = 'supermercado',
+    this.listName = 'Lista de la Compra',
+    this.listIcon = '🛒',
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -80,7 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _subscribeToChanges() {
     try {
-      _subscription = widget.repository.watchProducts().listen((products) {
+      _subscription = widget.repository.watchProducts(listId: widget.listId).listen((products) {
         if (mounted) {
           setState(() => _products = products);
         }
@@ -93,7 +102,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadProducts() async {
     setState(() => _isLoading = true);
     try {
-      final products = await widget.repository.getAll();
+      final products = await widget.repository.getAll(listId: widget.listId);
       if (mounted) setState(() => _products = products);
     } catch (e) {
       if (mounted) {
@@ -111,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (name.isEmpty || _isAdding) return;
     setState(() => _isAdding = true);
     try {
-      await widget.repository.addProduct(name, 'Usuario');
+      await widget.repository.addProduct(name, 'Usuario', listId: widget.listId);
       if (mounted) _controller.clear();
     } catch (e) {
       if (mounted) {
@@ -437,6 +446,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
@@ -446,7 +459,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ),
-        title: const Text('Lista de la Compra'),
+        title: Text('${widget.listIcon} ${widget.listName}'),
         actions: [
           IconButton(
             icon: Icon(
