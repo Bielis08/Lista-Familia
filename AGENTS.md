@@ -69,3 +69,25 @@ flutter build apk --dart-define=SUPABASE_URL=URL --dart-define=SUPABASE_KEY=KEY 
 - Sync service uses Supabase Realtime `.stream(primaryKey: ['id'])` - requires Realtime enabled in Supabase dashboard
 - `replaceAllFromRemote()` in a transaction: deletes non-dirty local records, inserts new remote ones (preserves local dirty state)
 - UI sync bar uses `AnimatedSize` to prevent layout jumps
+
+## Maintenance Rules
+
+### When adding new functionality:
+1. **Update AGENTS.md** - Add new files to Architecture section, update Key Files for Changes if needed
+2. **Update README.md** - Add feature description, usage instructions, or screenshots if user-facing
+3. **Update Supabase schema** - If new columns/tables are needed, migrate Supabase first, then update Drift schema
+4. **Add tests** - Write unit tests for new logic, widget tests for new UI components
+5. **Run `dart run build_runner build`** - After any schema changes in Drift tables
+
+### When modifying database schema:
+1. Update `lib/database/tables/products.dart` (or new table file)
+2. Run `dart run build_runner build`
+3. Update Supabase table structure via dashboard
+4. Update `lib/database/daos/product_dao.dart` with new queries
+5. Update sync logic in `lib/services/sync_service.dart` if needed
+
+### When adding new screens/widgets:
+1. Add to `lib/screens/` or `lib/widgets/`
+2. Update navigation in `lib/main.dart` if new route
+3. Add widget tests in `test/widget/`
+4. Update README.md with feature description

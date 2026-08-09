@@ -18,6 +18,7 @@ class SyncService {
   int _pendingCount = 0;
   SyncStatus _status = SyncStatus.idle;
   DateTime? _lastSyncTime;
+  bool _disposed = false;
 
   final StreamController<bool> _connectivityController = StreamController<bool>.broadcast();
   final StreamController<int> _pendingController = StreamController<int>.broadcast();
@@ -35,11 +36,11 @@ class SyncService {
     try {
       final results = await Connectivity().checkConnectivity();
       _isConnected = results.any((r) => r != ConnectivityResult.none);
-      _connectivityController.add(_isConnected);
+      if (!_disposed) _connectivityController.add(_isConnected);
     } catch (_) {
       _isConnected = true;
     }
-    _setupConnectivity();
+    if (!_disposed) _setupConnectivity();
     await _updatePendingCount();
   }
 
@@ -47,7 +48,7 @@ class SyncService {
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen((results) {
       final wasConnected = _isConnected;
       _isConnected = results.any((r) => r != ConnectivityResult.none);
-      _connectivityController.add(_isConnected);
+      if (!_disposed) _connectivityController.add(_isConnected);
 
       if (!wasConnected && _isConnected) {
         syncNow();
@@ -63,7 +64,7 @@ class SyncService {
           .order('position', ascending: true)
           .listen(
         (_) async {
-          if (_isConnected && !_isSyncing) {
+          if (_isConnected && !_isSyncing && !_disposed) {
             await _pullRemoteRecords();
             await _updatePendingCount();
           }
@@ -79,7 +80,7 @@ class SyncService {
 
   void _startPeriodicSync() {
     _syncTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (_isConnected && !_isSyncing) {
+      if (_isConnected && !_isSyncing && !_disposed) {
         syncNow();
       }
     });
@@ -95,20 +96,20 @@ class SyncService {
   Stream<SyncStatus> get onStatusChanged => _statusController.stream;
 
   Future<void> syncNow() async {
-    if (!_isConnected || _isSyncing) return;
+    if (!_isConnected || _isSyncing || _disposed) return;
     _isSyncing = true;
     _status = SyncStatus.syncing;
-    _statusController.add(_status);
+    if (!_disposed) _statusController.add(_status);
 
     try {
       await _pushDirtyRecords();
       await _pullRemoteRecords();
       _lastSyncTime = DateTime.now();
       _status = SyncStatus.synced;
-      _statusController.add(_status);
+      if (!_disposed) _statusController.add(_status);
     } catch (e) {
       _status = SyncStatus.error;
-      _statusController.add(_status);
+      if (!_disposed) _statusController.add(_status);
     } finally {
       _isSyncing = false;
       await _updatePendingCount();
@@ -116,10 +117,15 @@ class SyncService {
   }
 
   Future<void> _updatePendingCount() async {
-    final dirty = await _local.getDirty();
-    final deleted = await _local.getDeletedDirty();
-    _pendingCount = dirty.length + deleted.length;
-    _pendingController.add(_pendingCount);
+    if (_disposed) return;
+    try {
+      final dirty = await _local.getDirty();
+      final deleted = await _local.getDeletedDirty();
+      _pendingCount = dirty.length + deleted.length;
+      if (!_disposed) {
+        _pendingController.add(_pendingCount);
+      }
+    } catch (_) {}
   }
 
   Future<void> _pushDirtyRecords() async {
@@ -155,6 +161,7 @@ class SyncService {
   }
 
   void dispose() {
+    _disposed = true;
     _syncTimer?.cancel();
     _connectivitySubscription?.cancel();
     _realtimeSubscription?.cancel();

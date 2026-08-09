@@ -1,7 +1,7 @@
 name: lista_familia
 description: "Lista de la compra para la familia Montero Román. Permite la sincronización de la lista entre toda la familia."
 publish_to: 'none'
-version: 2.0.1+1
+version: 2.0.5+1
 
 homepage: https://github.com/Bielis08/Lista-Familia
 repository: https://github.com/Bielis08/Lista-Familia
@@ -32,15 +32,12 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  # The "flutter_lints" package below contains a set of recommended lints to
-  # encourage good coding practices. The lint set provided by the package is
-  # activated in the `analysis_options.yaml` file located at the root of your
-  # package. See that file for information about deactivating specific lint
-  # rules and activating additional ones.
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.4
   drift_dev: ^2.18.0
   build_runner: ^2.4.0
+  mockito: ^5.4.0
+  sqlite3: ^2.0.0
 
 flutter_launcher_icons:
   android: true
