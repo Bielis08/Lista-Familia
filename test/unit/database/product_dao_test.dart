@@ -207,9 +207,9 @@ void main() {
       final remote = ProductTableData(
         id: 'remote_1', name: 'Remote Product', isChecked: false,
         isImportant: false, quantity: 1, createdBy: 'remote',
-        createdAt: DateTime.now(), position: 0, dirty: false,
-        deleted: false, lastModified: DateTime.now(), syncedAt: null,
-        userId: 'remote',
+        createdAt: DateTime.now(), position: 0, listId: 'supermercado',
+        dirty: false, deleted: false, lastModified: DateTime.now(),
+        syncedAt: null, userId: 'remote',
       );
 
       await db.productDao.upsertFromRemote(remote);
@@ -228,9 +228,9 @@ void main() {
       final remote = ProductTableData(
         id: '1', name: 'Remote Updated', isChecked: true,
         isImportant: false, quantity: 5, createdBy: 'remote',
-        createdAt: DateTime.now(), position: 2, dirty: false,
-        deleted: false, lastModified: DateTime.now(), syncedAt: null,
-        userId: 'remote',
+        createdAt: DateTime.now(), position: 2, listId: 'supermercado',
+        dirty: false, deleted: false, lastModified: DateTime.now(),
+        syncedAt: null, userId: 'remote',
       );
 
       await db.productDao.upsertFromRemote(remote);
@@ -249,9 +249,9 @@ void main() {
       final remote = ProductTableData(
         id: '1', name: 'Remote', isChecked: false,
         isImportant: false, quantity: 1, createdBy: 'remote',
-        createdAt: DateTime.now(), position: 0, dirty: false,
-        deleted: false, lastModified: DateTime.now(), syncedAt: null,
-        userId: 'remote',
+        createdAt: DateTime.now(), position: 0, listId: 'supermercado',
+        dirty: false, deleted: false, lastModified: DateTime.now(),
+        syncedAt: null, userId: 'remote',
       );
 
       await db.productDao.upsertFromRemote(remote);
@@ -277,9 +277,9 @@ void main() {
         ProductTableData(
           id: 'remote_1', name: 'Remote 1', isChecked: false,
           isImportant: false, quantity: 1, createdBy: 'remote',
-          createdAt: DateTime.now(), position: 0, dirty: false,
-          deleted: false, lastModified: DateTime.now(), syncedAt: null,
-          userId: 'remote',
+          createdAt: DateTime.now(), position: 0, listId: 'supermercado',
+          dirty: false, deleted: false, lastModified: DateTime.now(),
+          syncedAt: null, userId: 'remote',
         ),
       ];
 

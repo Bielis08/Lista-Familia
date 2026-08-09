@@ -1,7 +1,7 @@
 # AGENTS.md - Lista Familia
 
 ## Project Overview
-Flutter shopping list app for the Montero Román family (4 users). Offline-first architecture with Supabase backend for real-time sync.
+Flutter shopping list app for the Montero Román family (4 users). Offline-first architecture with Supabase backend for real-time sync. Supports multiple shopping lists.
 
 ## Tech Stack
 - **Framework**: Flutter 3.x + Dart
@@ -13,22 +13,28 @@ Flutter shopping list app for the Montero Román family (4 users). Offline-first
 ```
 lib/
 ├── database/          # Drift SQLite layer
-│   ├── app_database.dart       # DB connection & migrations
-│   ├── tables/products.dart    # ProductTable schema with sync metadata
-│   └── daos/product_dao.dart   # CRUD + sync queries
+│   ├── app_database.dart       # DB connection & migrations (schema v2)
+│   ├── tables/
+│   │   ├── products.dart       # ProductTable schema with listId + sync metadata
+│   │   └── lists.dart          # ListTable schema (id, name, icon, position)
+│   └── daos/
+│       ├── product_dao.dart    # CRUD + sync queries (list-scoped)
+│       └── list_dao.dart       # List CRUD + sync queries
 ├── models/
-│   └── product.dart            # Product data class (id, name, isChecked, isImportant, quantity, createdBy, createdAt, position)
+│   ├── product.dart            # Product data class (id, name, isChecked, isImportant, quantity, createdBy, createdAt, position, listId)
+│   └── list_model.dart         # ListModel data class (id, name, icon, position, createdAt)
 ├── repositories/
-│   ├── product_repository.dart           # Abstract interface
+│   ├── product_repository.dart           # Abstract interface (product + list methods)
 │   ├── local_product_repository.dart     # Drift implementation (source of truth for UI)
 │   ├── remote_product_repository.dart    # Supabase REST wrapper
 │   └── product_repository_impl.dart      # Orchestrates local + sync
 ├── services/
-│   ├── supabase_service.dart    # Supabase client init + REST queries
-│   ├── sync_service.dart        # Realtime listener + periodic push/pull
-│   └── connectivity_service.dart
+│   ├── supabase_service.dart    # Supabase client init + REST queries (products + lists)
+│   ├── sync_service.dart        # Realtime listener + periodic push/pull (both tables)
+│   └── update_service.dart      # APK update checker
 ├── screens/
-│   └── home_screen.dart         # Main UI
+│   ├── list_selector_screen.dart  # List selection / management UI
+│   └── home_screen.dart           # Product list UI (scoped by listId)
 └── widgets/
     └── product_item.dart        # Product list item widget
 ```
@@ -36,17 +42,20 @@ lib/
 ## Sync Strategy
 - **Local-first**: All reads/writes go to SQLite first (instant UI)
 - **Push**: Dirty records → Supabase REST API (single updateAll call per product)
-- **Pull**: Supabase Realtime stream → upsert to local DB
+- **Pull**: Supabase Realtime stream → upsert to local DB (products + lists)
 - **Fallback**: Periodic sync every 30s if Realtime fails
 - **Conflict resolution**: Last-write-wins (server timestamp)
 - **Soft delete**: Products marked `deleted=true, dirty=true` then hard-deleted after push
 
 ## Key Files for Changes
 - `lib/database/tables/products.dart` - Add columns here, then run `dart run build_runner build`
-- `lib/database/daos/product_dao.dart` - Add new queries
-- `lib/services/supabase_service.dart` - Supabase REST operations
-- `lib/services/sync_service.dart` - Sync logic (realtime + push/pull)
-- `lib/screens/home_screen.dart` - Main UI with sync status bar
+- `lib/database/tables/lists.dart` - List table schema
+- `lib/database/daos/product_dao.dart` - Product queries (list-scoped)
+- `lib/database/daos/list_dao.dart` - List CRUD queries
+- `lib/services/supabase_service.dart` - Supabase REST operations (products + lists)
+- `lib/services/sync_service.dart` - Sync logic (realtime + push/pull for both tables)
+- `lib/screens/list_selector_screen.dart` - List management UI
+- `lib/screens/home_screen.dart` - Main product list UI
 
 ## Commands
 ```bash
@@ -59,16 +68,20 @@ flutter build apk --dart-define=SUPABASE_URL=URL --dart-define=SUPABASE_KEY=KEY 
 
 ## Supabase Config
 - URL: `https://gjkmrlaiipzabpuvwfyr.supabase.co`
-- Table: `products` (id TEXT PK, name, is_checked, is_important, quantity, created_by, created_at, position)
-- Realtime: enabled on `products` table
+- Tables:
+  - `products` (id TEXT PK, name, is_checked, is_important, quantity, created_by, created_at, position, list_id)
+  - `lists` (id TEXT PK, name, icon, position, created_at)
+- Realtime: enabled on both `products` and `lists` tables
 - RLS: open policies for anon role (family use)
+- Migration: `supabase/migrations/002_add_lists.sql`
 
 ## Gotchas
-- After modifying `ProductTable` in `tables/products.dart`, MUST run `dart run build_runner build`
+- After modifying `ProductTable` or `ListTable` in `tables/`, MUST run `dart run build_runner build`
 - Drift generates `*.g.dart` files - never edit manually
-- Sync service uses Supabase Realtime `.stream(primaryKey: ['id'])` - requires Realtime enabled in Supabase dashboard
+- Sync service uses Supabase Realtime `.stream(primaryKey: ['id'])` for BOTH tables
 - `replaceAllFromRemote()` in a transaction: deletes non-dirty local records, inserts new remote ones (preserves local dirty state)
-- UI sync bar uses `AnimatedSize` to prevent layout jumps
+- Position is scoped per list (products use `countByList` for auto-positioning)
+- Initial migration in `main.dart` syncs ALL products (unfiltered) and ALL lists from Supabase
 
 ## Maintenance Rules
 

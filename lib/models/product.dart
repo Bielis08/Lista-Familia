@@ -7,6 +7,7 @@ class Product {
   final String createdBy;
   final DateTime createdAt;
   int position;
+  String listId;
 
   Product({
     required this.id,
@@ -17,6 +18,7 @@ class Product {
     required this.createdBy,
     required this.createdAt,
     this.position = 0,
+    this.listId = 'supermercado',
   });
 
   factory Product.fromMap(Map<String, dynamic> map) {
@@ -31,6 +33,7 @@ class Product {
           ? DateTime.parse(map['created_at'] as String)
           : DateTime.now(),
       position: map['position'] as int? ?? 0,
+      listId: map['list_id'] as String? ?? 'supermercado',
     );
   }
 
@@ -44,6 +47,7 @@ class Product {
       'created_by': createdBy,
       'created_at': createdAt.toIso8601String(),
       'position': position,
+      'list_id': listId,
     };
   }
 
@@ -53,6 +57,7 @@ class Product {
     bool? isImportant,
     int? quantity,
     int? position,
+    String? listId,
   }) {
     return Product(
       id: id,
@@ -63,6 +68,7 @@ class Product {
       createdBy: createdBy,
       createdAt: createdAt,
       position: position ?? this.position,
+      listId: listId ?? this.listId,
     );
   }
 }
