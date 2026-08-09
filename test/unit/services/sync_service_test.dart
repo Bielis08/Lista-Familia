@@ -32,9 +32,9 @@ void main() {
       dirty: Value(dirty),
       deleted: Value(deleted),
       lastModified: Value(DateTime.now()),
-      createdBy: Value('test_user'),
+      createdBy: const Value('test_user'),
       createdAt: Value(DateTime.now()),
-      userId: Value('test_user'),
+      userId: const Value('test_user'),
     ));
   }
 
@@ -45,14 +45,14 @@ void main() {
 
     test('_updatePendingCount is called on init', () async {
       await db.productDao.insertProduct(ProductTableCompanion(
-        id: Value('1'),
-        name: Value('Dirty'),
+        id: const Value('1'),
+        name: const Value('Dirty'),
         dirty: const Value(true),
         deleted: const Value(false),
         lastModified: Value(DateTime.now()),
-        createdBy: Value('test_user'),
+        createdBy: const Value('test_user'),
         createdAt: Value(DateTime.now()),
-        userId: Value('test_user'),
+        userId: const Value('test_user'),
       ));
 
       final service = SyncService(db);
@@ -87,7 +87,7 @@ void main() {
   group('status', () {
     test('syncNow runs and completes', () async {
       final statuses = <SyncStatus>[];
-      syncService.onStatusChanged.listen((s) => statuses.add(s));
+      syncService.onStatusChanged.listen(statuses.add);
 
       await syncService.syncNow();
 
