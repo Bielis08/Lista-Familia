@@ -198,6 +198,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             TextField(
               controller: nameController,
+              textCapitalization: TextCapitalization.sentences,
               decoration: const InputDecoration(
                 labelText: 'Nombre',
                 border: OutlineInputBorder(),
@@ -483,6 +484,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: TextField(
                     controller: _controller,
                     enabled: !_isViewMode,
+                    textCapitalization: TextCapitalization.sentences,
                     style: const TextStyle(fontSize: 15),
                     decoration: InputDecoration(
                       hintText: _isViewMode ? 'Modo vista' : 'Añadir producto...',
