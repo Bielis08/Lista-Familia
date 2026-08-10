@@ -71,6 +71,12 @@ class ProductRepositoryImpl implements ProductRepository {
   }
 
   @override
+  Future<void> updatePositions(List<({String id, int position})> updates) async {
+    await _local.updatePositions(updates);
+    unawaited(_syncService.syncNow());
+  }
+
+  @override
   Future<void> deleteProduct(String id) async {
     await _local.deleteProduct(id);
     unawaited(_syncService.syncNow());

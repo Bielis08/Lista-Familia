@@ -9,14 +9,20 @@ import 'package:lista_familia/services/supabase_service.dart';
 enum SyncStatus { idle, syncing, synced, error }
 
 class SyncService {
+  static const Duration _realtimeDebounceDelay = Duration(milliseconds: 600);
+
   final LocalProductRepository _local;
   final RemoteProductRepository _remote;
   Timer? _syncTimer;
+  Timer? _realtimeProductsDebounce;
+  Timer? _realtimeListsDebounce;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   StreamSubscription<List<dynamic>>? _realtimeProductsSubscription;
   StreamSubscription<List<dynamic>>? _realtimeListsSubscription;
   bool _isConnected = true;
   bool _isSyncing = false;
+  bool _isPullingProducts = false;
+  bool _isPullingLists = false;
   int _pendingCount = 0;
   SyncStatus _status = SyncStatus.idle;
   DateTime? _lastSyncTime;
@@ -65,12 +71,7 @@ class SyncService {
           .stream(primaryKey: ['id'])
           .order('position', ascending: true)
           .listen(
-        (_) async {
-          if (_isConnected && !_isSyncing && !_disposed) {
-            await _pullRemoteRecords();
-            await _updatePendingCount();
-          }
-        },
+        (_) => _scheduleProductsPull(),
         onError: (Object e) {
           debugPrint('Realtime products error: $e');
         },
@@ -85,17 +86,57 @@ class SyncService {
           .stream(primaryKey: ['id'])
           .order('position', ascending: true)
           .listen(
-        (_) async {
-          if (_isConnected && !_isSyncing && !_disposed) {
-            await _pullRemoteLists();
-          }
-        },
+        (_) => _scheduleListsPull(),
         onError: (Object e) {
           debugPrint('Realtime lists error: $e');
         },
       );
     } catch (e) {
       debugPrint('Realtime lists setup error: $e');
+    }
+  }
+
+  void _scheduleProductsPull() {
+    if (_disposed) return;
+    _realtimeProductsDebounce?.cancel();
+    _realtimeProductsDebounce = Timer(_realtimeDebounceDelay, () {
+      if (_disposed || !_isConnected || _isSyncing) return;
+      unawaited(_runProductsPull());
+    });
+  }
+
+  void _scheduleListsPull() {
+    if (_disposed) return;
+    _realtimeListsDebounce?.cancel();
+    _realtimeListsDebounce = Timer(_realtimeDebounceDelay, () {
+      if (_disposed || !_isConnected || _isSyncing) return;
+      unawaited(_runListsPull());
+    });
+  }
+
+  Future<void> _runProductsPull() async {
+    if (_isPullingProducts) return;
+    _isPullingProducts = true;
+    try {
+      await _pullRemoteRecords();
+    } catch (e) {
+      debugPrint('Realtime products pull failed: $e');
+    } finally {
+      _isPullingProducts = false;
+      await _updatePendingCount();
+    }
+  }
+
+  Future<void> _runListsPull() async {
+    if (_isPullingLists) return;
+    _isPullingLists = true;
+    try {
+      await _pullRemoteLists();
+    } catch (e) {
+      debugPrint('Realtime lists pull failed: $e');
+    } finally {
+      _isPullingLists = false;
+      await _updatePendingCount();
     }
   }
 
@@ -197,6 +238,7 @@ class SyncService {
     final deletedLists = await _local.getDeletedDirtyLists();
     for (final list in deletedLists) {
       try {
+        await _remote.deleteProductsByList(list.id);
         await _remote.deleteList(list.id);
         await _local.markListSynced(list.id);
       } catch (e) {
@@ -206,26 +248,20 @@ class SyncService {
   }
 
   Future<void> _pullRemoteRecords() async {
-    try {
-      final remoteProducts = await _remote.getAll();
-      await _local.syncFromRemote(remoteProducts);
-    } catch (e) {
-      debugPrint('Pull remote records failed: $e');
-    }
+    final remoteProducts = await _remote.getAll();
+    await _local.syncFromRemote(remoteProducts);
   }
 
   Future<void> _pullRemoteLists() async {
-    try {
-      final remoteLists = await _remote.getLists();
-      await _local.syncListsFromRemote(remoteLists);
-    } catch (e) {
-      debugPrint('Pull remote lists failed: $e');
-    }
+    final remoteLists = await _remote.getLists();
+    await _local.syncListsFromRemote(remoteLists);
   }
 
   void dispose() {
     _disposed = true;
     _syncTimer?.cancel();
+    _realtimeProductsDebounce?.cancel();
+    _realtimeListsDebounce?.cancel();
     _connectivitySubscription?.cancel();
     _realtimeProductsSubscription?.cancel();
     _realtimeListsSubscription?.cancel();

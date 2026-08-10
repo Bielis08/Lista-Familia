@@ -194,6 +194,24 @@ class ProductDao extends DatabaseAccessor<AppDatabase> with _$ProductDaoMixin {
     );
   }
 
+  Future<void> batchUpdatePositions(List<({String id, int position})> updates) async {
+    if (updates.isEmpty) return;
+    final now = DateTime.now();
+    await batch((batch) {
+      for (final u in updates) {
+        batch.update(
+          productTable,
+          ProductTableCompanion(
+            position: Value(u.position),
+            dirty: const Value(true),
+            lastModified: Value(now),
+          ),
+          where: (p) => p.id.equals(u.id),
+        );
+      }
+    });
+  }
+
   Future<void> updateProductFields({
     required String id,
     String? name,
@@ -273,15 +291,19 @@ class ProductDao extends DatabaseAccessor<AppDatabase> with _$ProductDaoMixin {
   }
 
   Future<int> count() async {
-    final result = await (select(productTable)..where((p) => p.deleted.equals(false))).get();
-    return result.length;
+    final query = selectOnly(productTable)
+      ..addColumns([countAll()])
+      ..where(productTable.deleted.equals(false));
+    final row = await query.getSingle();
+    return row.read<int>(countAll()) ?? 0;
   }
 
   Future<int> countByList(String listId) async {
-    final result = await (select(productTable)
-          ..where((p) => p.deleted.equals(false) & p.listId.equals(listId)))
-        .get();
-    return result.length;
+    final query = selectOnly(productTable)
+      ..addColumns([countAll()])
+      ..where(productTable.deleted.equals(false) & productTable.listId.equals(listId));
+    final row = await query.getSingle();
+    return row.read<int>(countAll()) ?? 0;
   }
 
   Future<ProductTableData?> getById(String id) {

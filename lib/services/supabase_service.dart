@@ -98,6 +98,10 @@ class SupabaseService {
     await client.from('products').delete().eq('id', id);
   }
 
+  Future<void> deleteProductsByList(String listId) async {
+    await client.from('products').delete().eq('list_id', listId);
+  }
+
   // --- Lists ---
 
   Stream<List<ListModel>> watchLists() {

@@ -37,6 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isAdding = false;
   bool _isViewMode = true;
   bool _isConnected = true;
+  bool _isCheckingUpdate = false;
   String _searchQuery = '';
   int _pendingCount = 0;
   SyncStatus _syncStatus = SyncStatus.idle;
@@ -44,6 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
   StreamSubscription<bool>? _connectivitySubscription;
   StreamSubscription<int>? _pendingSubscription;
   StreamSubscription<SyncStatus>? _statusSubscription;
+  Timer? _searchDebounce;
 
   @override
   void initState() {
@@ -56,6 +58,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _subscription?.cancel();
     _connectivitySubscription?.cancel();
     _pendingSubscription?.cancel();
@@ -281,9 +284,7 @@ class _HomeScreenState extends State<HomeScreen> {
       (p) => p.copyWith(isChecked: false),
     ).toList());
     try {
-      for (final p in previousProducts.where((p) => p.isChecked)) {
-        await widget.repository.toggleProduct(p.id, false);
-      }
+      await widget.repository.uncheckAll(listId: widget.listId);
     } catch (e) {
       if (mounted) {
         setState(() => _products = previousProducts);
@@ -341,9 +342,10 @@ class _HomeScreenState extends State<HomeScreen> {
       _products.insert(newIndex, item);
     });
     try {
-      for (int i = 0; i < _products.length; i++) {
-        await widget.repository.updatePosition(_products[i].id, i);
-      }
+      await widget.repository.updatePositions([
+        for (var i = 0; i < _products.length; i++)
+          (id: _products[i].id, position: i),
+      ]);
     } catch (e) {
       if (mounted) {
         setState(() => _products = previousProducts);
@@ -364,6 +366,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _checkForUpdate() async {
+    if (_isCheckingUpdate) return;
+    setState(() => _isCheckingUpdate = true);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Buscando actualizaciones...'),
@@ -371,19 +375,36 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
 
-    final release = await _updateService.checkForUpdate();
+    final result = await _updateService.checkForUpdate();
 
-    if (mounted) {
-      if (release != null) {
-        UpdateDialog.show(context, release, _updateService);
-      } else {
+    if (!mounted) return;
+    setState(() => _isCheckingUpdate = false);
+
+    switch (result.status) {
+      case UpdateCheckStatus.updateAvailable:
+        if (result.hasUpdate) {
+          UpdateDialog.show(context, result.release!, _updateService);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No se pudo comprobar la version'),
+            ),
+          );
+        }
+      case UpdateCheckStatus.upToDate:
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Ya tienes la ultima version'),
             backgroundColor: Colors.green,
           ),
         );
-      }
+      case UpdateCheckStatus.error:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No se pudo comprobar. Revisa tu conexion.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
     }
   }
 
@@ -503,11 +524,22 @@ class _HomeScreenState extends State<HomeScreen> {
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
                           icon: Icon(Icons.clear, color: Colors.grey.shade400, size: 20),
-                          onPressed: () => setState(() => _searchQuery = ''),
+                          onPressed: () {
+                            _searchDebounce?.cancel();
+                            setState(() => _searchQuery = '');
+                          },
                         )
                       : null,
                 ),
-                onChanged: (value) => setState(() => _searchQuery = value),
+                onChanged: (value) {
+                  _searchDebounce?.cancel();
+                  _searchDebounce = Timer(
+                    const Duration(milliseconds: AppConstraints.productSearchDebounceMs),
+                    () {
+                      if (mounted) setState(() => _searchQuery = value);
+                    },
+                  );
+                },
               ),
             ),
           Padding(

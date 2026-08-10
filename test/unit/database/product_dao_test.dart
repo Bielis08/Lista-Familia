@@ -151,6 +151,32 @@ void main() {
       expect(product.dirty, true);
     });
 
+    test('batchUpdatePositions updates positions in a single batch', () async {
+      await db.productDao.insertProduct(createTestCompanion(id: '1', position: 0));
+      await db.productDao.insertProduct(createTestCompanion(id: '2', position: 1));
+
+      await db.productDao.batchUpdatePositions([
+        (id: '1', position: 5),
+        (id: '2', position: 3),
+      ]);
+
+      final p1 = await db.productDao.getById('1');
+      final p2 = await db.productDao.getById('2');
+      expect(p1!.position, 5);
+      expect(p1.dirty, true);
+      expect(p2!.position, 3);
+      expect(p2.dirty, true);
+    });
+
+    test('batchUpdatePositions is a no-op for empty input', () async {
+      await db.productDao.insertProduct(createTestCompanion(id: '1', position: 0));
+
+      await db.productDao.batchUpdatePositions([]);
+
+      final p1 = await db.productDao.getById('1');
+      expect(p1!.position, 0);
+    });
+
     test('softDelete marks deleted and dirty', () async {
       await db.productDao.insertProduct(createTestCompanion(id: '1'));
       await db.productDao.softDelete('1');

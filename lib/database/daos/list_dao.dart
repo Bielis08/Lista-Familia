@@ -34,6 +34,12 @@ class ListDao extends DatabaseAccessor<AppDatabase> with _$ListDaoMixin {
         .get();
   }
 
+  Future<List<ListTableData>> getDeleted() {
+    return (select(listTable)
+          ..where((l) => l.deleted.equals(true)))
+        .get();
+  }
+
   Future<int> insertList(ListTableCompanion list) {
     return into(listTable).insert(list, mode: InsertMode.replace);
   }
@@ -58,8 +64,11 @@ class ListDao extends DatabaseAccessor<AppDatabase> with _$ListDaoMixin {
   }
 
   Future<int> count() async {
-    final result = await (select(listTable)..where((l) => l.deleted.equals(false))).get();
-    return result.length;
+    final query = selectOnly(listTable)
+      ..addColumns([countAll()])
+      ..where(listTable.deleted.equals(false));
+    final row = await query.getSingle();
+    return row.read<int>(countAll()) ?? 0;
   }
 
   Future<ListTableData?> getById(String id) {

@@ -85,13 +85,24 @@ void main() {
   });
 
   group('status', () {
-    test('syncNow runs and completes', () async {
+    test('syncNow reports error when remote is unreachable', () async {
       final statuses = <SyncStatus>[];
       syncService.onStatusChanged.listen(statuses.add);
 
       await syncService.syncNow();
 
-      expect(syncService.status, SyncStatus.synced);
+      expect(syncService.status, SyncStatus.error);
+      expect(statuses, contains(SyncStatus.syncing));
+      expect(statuses, contains(SyncStatus.error));
+    });
+
+    test('syncNow preserves pending dirty records on remote failure', () async {
+      await insertTestProduct(id: '1', dirty: true);
+
+      await syncService.syncNow();
+
+      expect(syncService.status, SyncStatus.error);
+      expect(syncService.pendingCount, 1);
     });
   });
 
