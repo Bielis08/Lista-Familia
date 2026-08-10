@@ -12,7 +12,8 @@ class SyncService {
   final RemoteProductRepository _remote;
   Timer? _syncTimer;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
-  StreamSubscription<List<dynamic>>? _realtimeSubscription;
+  StreamSubscription<List<dynamic>>? _realtimeProductsSubscription;
+  StreamSubscription<List<dynamic>>? _realtimeListsSubscription;
   bool _isConnected = true;
   bool _isSyncing = false;
   int _pendingCount = 0;
@@ -58,7 +59,7 @@ class SyncService {
 
   void _setupRealtime() {
     try {
-      _realtimeSubscription = SupabaseService.client
+      _realtimeProductsSubscription = SupabaseService.client
           .from('products')
           .stream(primaryKey: ['id'])
           .order('position', ascending: true)
@@ -69,12 +70,27 @@ class SyncService {
             await _updatePendingCount();
           }
         },
-        onError: (_) {
-          // Realtime connection error - will fall back to periodic sync
-        },
+        onError: (_) {},
       );
     } catch (e) {
       // Realtime not available, rely on periodic sync
+    }
+
+    try {
+      _realtimeListsSubscription = SupabaseService.client
+          .from('lists')
+          .stream(primaryKey: ['id'])
+          .order('position', ascending: true)
+          .listen(
+        (_) async {
+          if (_isConnected && !_isSyncing && !_disposed) {
+            await _pullRemoteLists();
+          }
+        },
+        onError: (_) {},
+      );
+    } catch (e) {
+      // Realtime not available for lists
     }
   }
 
@@ -104,6 +120,7 @@ class SyncService {
     try {
       await _pushDirtyRecords();
       await _pullRemoteRecords();
+      await _pullRemoteLists();
       _lastSyncTime = DateTime.now();
       _status = SyncStatus.synced;
       if (!_disposed) _statusController.add(_status);
@@ -160,11 +177,21 @@ class SyncService {
     }
   }
 
+  Future<void> _pullRemoteLists() async {
+    try {
+      final remoteLists = await _remote.getLists();
+      await _local.syncListsFromRemote(remoteLists);
+    } catch (e) {
+      // Will retry on next sync cycle
+    }
+  }
+
   void dispose() {
     _disposed = true;
     _syncTimer?.cancel();
     _connectivitySubscription?.cancel();
-    _realtimeSubscription?.cancel();
+    _realtimeProductsSubscription?.cancel();
+    _realtimeListsSubscription?.cancel();
     _connectivityController.close();
     _pendingController.close();
     _statusController.close();

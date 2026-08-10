@@ -32,9 +32,9 @@ void main() {
       dirty: Value(dirty),
       deleted: Value(deleted),
       lastModified: Value(DateTime.now()),
-      createdBy: Value('test_user'),
+      createdBy: const Value('test_user'),
       createdAt: Value(DateTime.now()),
-      userId: Value('test_user'),
+      userId: const Value('test_user'),
     ));
   }
 
@@ -222,9 +222,9 @@ void main() {
         repo.toProduct(ProductTableData(
           id: 'remote_1', name: 'Remote', isChecked: false,
           isImportant: false, quantity: 1, createdBy: 'remote',
-          createdAt: DateTime.now(), position: 0, dirty: false,
-          deleted: false, lastModified: DateTime.now(), syncedAt: null,
-          userId: 'remote',
+          createdAt: DateTime.now(), position: 0, listId: 'supermercado',
+          dirty: false, deleted: false, lastModified: DateTime.now(),
+          syncedAt: null, userId: 'remote',
         )),
       ];
 
@@ -265,9 +265,9 @@ void main() {
       final row = ProductTableData(
         id: '1', name: 'Leche', isChecked: true,
         isImportant: false, quantity: 3, createdBy: 'mom',
-        createdAt: now, position: 5, dirty: false,
-        deleted: false, lastModified: now, syncedAt: null,
-        userId: 'mom',
+        createdAt: now, position: 5, listId: 'supermercado',
+        dirty: false, deleted: false, lastModified: now,
+        syncedAt: null, userId: 'mom',
       );
 
       final product = repo.toProduct(row);

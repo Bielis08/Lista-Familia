@@ -3,12 +3,22 @@ import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../repositories/product_repository_impl.dart';
 import '../services/sync_service.dart';
+import '../services/update_service.dart';
 import '../widgets/product_item.dart';
 
 class HomeScreen extends StatefulWidget {
   final ProductRepositoryImpl repository;
+  final String listId;
+  final String listName;
+  final String listIcon;
 
-  const HomeScreen({super.key, required this.repository});
+  const HomeScreen({
+    super.key,
+    required this.repository,
+    this.listId = 'supermercado',
+    this.listName = 'Lista de la Compra',
+    this.listIcon = '🛒',
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -16,6 +26,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _controller = TextEditingController();
+  final UpdateService _updateService = UpdateService();
   List<Product> _products = [];
   bool _isLoading = true;
   bool _isAdding = false;
@@ -78,7 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _subscribeToChanges() {
     try {
-      _subscription = widget.repository.watchProducts().listen((products) {
+      _subscription = widget.repository.watchProducts(listId: widget.listId).listen((products) {
         if (mounted) {
           setState(() => _products = products);
         }
@@ -91,7 +102,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadProducts() async {
     setState(() => _isLoading = true);
     try {
-      final products = await widget.repository.getAll();
+      final products = await widget.repository.getAll(listId: widget.listId);
       if (mounted) setState(() => _products = products);
     } catch (e) {
       if (mounted) {
@@ -109,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (name.isEmpty || _isAdding) return;
     setState(() => _isAdding = true);
     try {
-      await widget.repository.addProduct(name, 'Usuario');
+      await widget.repository.addProduct(name, 'Usuario', listId: widget.listId);
       if (mounted) _controller.clear();
     } catch (e) {
       if (mounted) {
@@ -353,6 +364,30 @@ class _HomeScreenState extends State<HomeScreen> {
 
   int get _checkedCount => _products.where((p) => p.isChecked).length;
 
+  Future<void> _checkForUpdate() async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Buscando actualizaciones...'),
+        duration: Duration(seconds: 1),
+      ),
+    );
+
+    final release = await _updateService.checkForUpdate();
+
+    if (mounted) {
+      if (release != null) {
+        UpdateService.showUpdateDialog(context, release, _updateService);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Ya tienes la última versión'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    }
+  }
+
   Widget _buildSyncStatusBar() {
     Color bgColor;
     Color textColor;
@@ -412,6 +447,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
@@ -421,7 +460,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ),
-        title: const Text('Lista de la Compra'),
+        title: Text('${widget.listIcon} ${widget.listName}'),
         actions: [
           IconButton(
             icon: Icon(
@@ -438,6 +477,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 _uncheckAll();
               } else if (value == 'delete_all') {
                 Future.delayed(Duration.zero, _confirmDeleteAll);
+              } else if (value == 'check_update') {
+                _checkForUpdate();
               }
             },
             itemBuilder: (context) => [
@@ -465,6 +506,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(
                       _isViewMode ? 'Eliminar todo (bloqueado)' : 'Eliminar todo',
                     ),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'check_update',
+                child: Row(
+                  children: [
+                    Icon(Icons.system_update_outlined, size: 20),
+                    SizedBox(width: 10),
+                    Text('Buscar actualizaciones'),
                   ],
                 ),
               ),

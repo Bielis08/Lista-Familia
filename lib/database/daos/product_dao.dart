@@ -18,9 +18,29 @@ class ProductDao extends DatabaseAccessor<AppDatabase> with _$ProductDaoMixin {
         .watch();
   }
 
+  Stream<List<ProductTableData>> watchByList(String listId) {
+    return (select(productTable)
+          ..where((p) => p.deleted.equals(false) & p.listId.equals(listId))
+          ..orderBy([
+            (p) => OrderingTerm.asc(p.position),
+            (p) => OrderingTerm.desc(p.createdAt),
+          ]))
+        .watch();
+  }
+
   Future<List<ProductTableData>> getAll() {
     return (select(productTable)
           ..where((p) => p.deleted.equals(false))
+          ..orderBy([
+            (p) => OrderingTerm.asc(p.position),
+            (p) => OrderingTerm.desc(p.createdAt),
+          ]))
+        .get();
+  }
+
+  Future<List<ProductTableData>> getAllByList(String listId) {
+    return (select(productTable)
+          ..where((p) => p.deleted.equals(false) & p.listId.equals(listId))
           ..orderBy([
             (p) => OrderingTerm.asc(p.position),
             (p) => OrderingTerm.desc(p.createdAt),
@@ -58,6 +78,7 @@ class ProductDao extends DatabaseAccessor<AppDatabase> with _$ProductDaoMixin {
           createdBy: Value(remote.createdBy),
           createdAt: Value(remote.createdAt),
           position: Value(remote.position),
+          listId: Value(remote.listId),
           dirty: const Value(false),
           deleted: const Value(false),
           lastModified: Value(remote.createdAt),
@@ -73,6 +94,7 @@ class ProductDao extends DatabaseAccessor<AppDatabase> with _$ProductDaoMixin {
           isImportant: Value(remote.isImportant),
           quantity: Value(remote.quantity),
           position: Value(remote.position),
+          listId: Value(remote.listId),
           dirty: const Value(false),
           lastModified: Value(remote.createdAt),
           syncedAt: Value(DateTime.now()),
@@ -98,6 +120,7 @@ class ProductDao extends DatabaseAccessor<AppDatabase> with _$ProductDaoMixin {
               createdBy: Value(remote.createdBy),
               createdAt: Value(remote.createdAt),
               position: Value(remote.position),
+              listId: Value(remote.listId),
               dirty: const Value(false),
               deleted: const Value(false),
               lastModified: Value(remote.createdAt),
@@ -140,7 +163,7 @@ class ProductDao extends DatabaseAccessor<AppDatabase> with _$ProductDaoMixin {
         dirty: const Value(true),
         deleted: Value(deleted),
         lastModified: Value(now),
-        userId: Value('local_user'),
+        userId: const Value('local_user'),
       ),
     );
   }
@@ -152,7 +175,7 @@ class ProductDao extends DatabaseAccessor<AppDatabase> with _$ProductDaoMixin {
         position: Value(position),
         dirty: const Value(true),
         lastModified: Value(now),
-        userId: Value('local_user'),
+        userId: const Value('local_user'),
       ),
     );
   }
@@ -168,7 +191,7 @@ class ProductDao extends DatabaseAccessor<AppDatabase> with _$ProductDaoMixin {
     final companion = ProductTableCompanion(
       dirty: const Value(true),
       lastModified: Value(now),
-      userId: Value('local_user'),
+      userId: const Value('local_user'),
       name: name != null ? Value(name) : const Value.absent(),
       quantity: quantity != null ? Value(quantity) : const Value.absent(),
       isChecked: isChecked != null ? Value(isChecked) : const Value.absent(),
@@ -184,7 +207,7 @@ class ProductDao extends DatabaseAccessor<AppDatabase> with _$ProductDaoMixin {
         deleted: const Value(true),
         dirty: const Value(true),
         lastModified: Value(now),
-        userId: Value('local_user'),
+        userId: const Value('local_user'),
       ),
     );
   }
@@ -199,6 +222,13 @@ class ProductDao extends DatabaseAccessor<AppDatabase> with _$ProductDaoMixin {
 
   Future<int> count() async {
     return (select(productTable)..where((p) => p.deleted.equals(false))).get().then((list) => list.length);
+  }
+
+  Future<int> countByList(String listId) async {
+    return (select(productTable)
+          ..where((p) => p.deleted.equals(false) & p.listId.equals(listId)))
+        .get()
+        .then((list) => list.length);
   }
 
   Future<ProductTableData?> getById(String id) {

@@ -103,6 +103,16 @@ class $ProductTableTable extends ProductTable
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _listIdMeta = const VerificationMeta('listId');
+  @override
+  late final GeneratedColumn<String> listId = GeneratedColumn<String>(
+    'list_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('supermercado'),
+  );
   static const VerificationMeta _dirtyMeta = const VerificationMeta('dirty');
   @override
   late final GeneratedColumn<bool> dirty = GeneratedColumn<bool>(
@@ -172,6 +182,7 @@ class $ProductTableTable extends ProductTable
     createdBy,
     createdAt,
     position,
+    listId,
     dirty,
     deleted,
     lastModified,
@@ -244,6 +255,12 @@ class $ProductTableTable extends ProductTable
       context.handle(
         _positionMeta,
         position.isAcceptableOrUnknown(data['position']!, _positionMeta),
+      );
+    }
+    if (data.containsKey('list_id')) {
+      context.handle(
+        _listIdMeta,
+        listId.isAcceptableOrUnknown(data['list_id']!, _listIdMeta),
       );
     }
     if (data.containsKey('dirty')) {
@@ -324,6 +341,10 @@ class $ProductTableTable extends ProductTable
         DriftSqlType.int,
         data['${effectivePrefix}position'],
       )!,
+      listId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}list_id'],
+      )!,
       dirty: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}dirty'],
@@ -363,6 +384,7 @@ class ProductTableData extends DataClass
   final String createdBy;
   final DateTime createdAt;
   final int position;
+  final String listId;
   final bool dirty;
   final bool deleted;
   final DateTime lastModified;
@@ -377,6 +399,7 @@ class ProductTableData extends DataClass
     required this.createdBy,
     required this.createdAt,
     required this.position,
+    required this.listId,
     required this.dirty,
     required this.deleted,
     required this.lastModified,
@@ -394,6 +417,7 @@ class ProductTableData extends DataClass
     map['created_by'] = Variable<String>(createdBy);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['position'] = Variable<int>(position);
+    map['list_id'] = Variable<String>(listId);
     map['dirty'] = Variable<bool>(dirty);
     map['deleted'] = Variable<bool>(deleted);
     map['last_modified'] = Variable<DateTime>(lastModified);
@@ -414,6 +438,7 @@ class ProductTableData extends DataClass
       createdBy: Value(createdBy),
       createdAt: Value(createdAt),
       position: Value(position),
+      listId: Value(listId),
       dirty: Value(dirty),
       deleted: Value(deleted),
       lastModified: Value(lastModified),
@@ -438,6 +463,7 @@ class ProductTableData extends DataClass
       createdBy: serializer.fromJson<String>(json['createdBy']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       position: serializer.fromJson<int>(json['position']),
+      listId: serializer.fromJson<String>(json['listId']),
       dirty: serializer.fromJson<bool>(json['dirty']),
       deleted: serializer.fromJson<bool>(json['deleted']),
       lastModified: serializer.fromJson<DateTime>(json['lastModified']),
@@ -457,6 +483,7 @@ class ProductTableData extends DataClass
       'createdBy': serializer.toJson<String>(createdBy),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'position': serializer.toJson<int>(position),
+      'listId': serializer.toJson<String>(listId),
       'dirty': serializer.toJson<bool>(dirty),
       'deleted': serializer.toJson<bool>(deleted),
       'lastModified': serializer.toJson<DateTime>(lastModified),
@@ -474,6 +501,7 @@ class ProductTableData extends DataClass
     String? createdBy,
     DateTime? createdAt,
     int? position,
+    String? listId,
     bool? dirty,
     bool? deleted,
     DateTime? lastModified,
@@ -488,6 +516,7 @@ class ProductTableData extends DataClass
     createdBy: createdBy ?? this.createdBy,
     createdAt: createdAt ?? this.createdAt,
     position: position ?? this.position,
+    listId: listId ?? this.listId,
     dirty: dirty ?? this.dirty,
     deleted: deleted ?? this.deleted,
     lastModified: lastModified ?? this.lastModified,
@@ -506,6 +535,7 @@ class ProductTableData extends DataClass
       createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       position: data.position.present ? data.position.value : this.position,
+      listId: data.listId.present ? data.listId.value : this.listId,
       dirty: data.dirty.present ? data.dirty.value : this.dirty,
       deleted: data.deleted.present ? data.deleted.value : this.deleted,
       lastModified: data.lastModified.present
@@ -527,6 +557,7 @@ class ProductTableData extends DataClass
           ..write('createdBy: $createdBy, ')
           ..write('createdAt: $createdAt, ')
           ..write('position: $position, ')
+          ..write('listId: $listId, ')
           ..write('dirty: $dirty, ')
           ..write('deleted: $deleted, ')
           ..write('lastModified: $lastModified, ')
@@ -546,6 +577,7 @@ class ProductTableData extends DataClass
     createdBy,
     createdAt,
     position,
+    listId,
     dirty,
     deleted,
     lastModified,
@@ -564,6 +596,7 @@ class ProductTableData extends DataClass
           other.createdBy == this.createdBy &&
           other.createdAt == this.createdAt &&
           other.position == this.position &&
+          other.listId == this.listId &&
           other.dirty == this.dirty &&
           other.deleted == this.deleted &&
           other.lastModified == this.lastModified &&
@@ -580,6 +613,7 @@ class ProductTableCompanion extends UpdateCompanion<ProductTableData> {
   final Value<String> createdBy;
   final Value<DateTime> createdAt;
   final Value<int> position;
+  final Value<String> listId;
   final Value<bool> dirty;
   final Value<bool> deleted;
   final Value<DateTime> lastModified;
@@ -595,6 +629,7 @@ class ProductTableCompanion extends UpdateCompanion<ProductTableData> {
     this.createdBy = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.position = const Value.absent(),
+    this.listId = const Value.absent(),
     this.dirty = const Value.absent(),
     this.deleted = const Value.absent(),
     this.lastModified = const Value.absent(),
@@ -611,6 +646,7 @@ class ProductTableCompanion extends UpdateCompanion<ProductTableData> {
     required String createdBy,
     required DateTime createdAt,
     this.position = const Value.absent(),
+    this.listId = const Value.absent(),
     this.dirty = const Value.absent(),
     this.deleted = const Value.absent(),
     required DateTime lastModified,
@@ -632,6 +668,7 @@ class ProductTableCompanion extends UpdateCompanion<ProductTableData> {
     Expression<String>? createdBy,
     Expression<DateTime>? createdAt,
     Expression<int>? position,
+    Expression<String>? listId,
     Expression<bool>? dirty,
     Expression<bool>? deleted,
     Expression<DateTime>? lastModified,
@@ -648,6 +685,7 @@ class ProductTableCompanion extends UpdateCompanion<ProductTableData> {
       if (createdBy != null) 'created_by': createdBy,
       if (createdAt != null) 'created_at': createdAt,
       if (position != null) 'position': position,
+      if (listId != null) 'list_id': listId,
       if (dirty != null) 'dirty': dirty,
       if (deleted != null) 'deleted': deleted,
       if (lastModified != null) 'last_modified': lastModified,
@@ -666,6 +704,7 @@ class ProductTableCompanion extends UpdateCompanion<ProductTableData> {
     Value<String>? createdBy,
     Value<DateTime>? createdAt,
     Value<int>? position,
+    Value<String>? listId,
     Value<bool>? dirty,
     Value<bool>? deleted,
     Value<DateTime>? lastModified,
@@ -682,6 +721,7 @@ class ProductTableCompanion extends UpdateCompanion<ProductTableData> {
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
       position: position ?? this.position,
+      listId: listId ?? this.listId,
       dirty: dirty ?? this.dirty,
       deleted: deleted ?? this.deleted,
       lastModified: lastModified ?? this.lastModified,
@@ -718,6 +758,9 @@ class ProductTableCompanion extends UpdateCompanion<ProductTableData> {
     if (position.present) {
       map['position'] = Variable<int>(position.value);
     }
+    if (listId.present) {
+      map['list_id'] = Variable<String>(listId.value);
+    }
     if (dirty.present) {
       map['dirty'] = Variable<bool>(dirty.value);
     }
@@ -750,6 +793,7 @@ class ProductTableCompanion extends UpdateCompanion<ProductTableData> {
           ..write('createdBy: $createdBy, ')
           ..write('createdAt: $createdAt, ')
           ..write('position: $position, ')
+          ..write('listId: $listId, ')
           ..write('dirty: $dirty, ')
           ..write('deleted: $deleted, ')
           ..write('lastModified: $lastModified, ')
@@ -761,16 +805,366 @@ class ProductTableCompanion extends UpdateCompanion<ProductTableData> {
   }
 }
 
+class $ListTableTable extends ListTable
+    with TableInfo<$ListTableTable, ListTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ListTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _iconMeta = const VerificationMeta('icon');
+  @override
+  late final GeneratedColumn<String> icon = GeneratedColumn<String>(
+    'icon',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _positionMeta = const VerificationMeta(
+    'position',
+  );
+  @override
+  late final GeneratedColumn<int> position = GeneratedColumn<int>(
+    'position',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, name, icon, position, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'lists';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ListTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('icon')) {
+      context.handle(
+        _iconMeta,
+        icon.isAcceptableOrUnknown(data['icon']!, _iconMeta),
+      );
+    }
+    if (data.containsKey('position')) {
+      context.handle(
+        _positionMeta,
+        position.isAcceptableOrUnknown(data['position']!, _positionMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => const {};
+  @override
+  ListTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ListTableData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      icon: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}icon'],
+      )!,
+      position: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}position'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ListTableTable createAlias(String alias) {
+    return $ListTableTable(attachedDatabase, alias);
+  }
+}
+
+class ListTableData extends DataClass implements Insertable<ListTableData> {
+  final String id;
+  final String name;
+  final String icon;
+  final int position;
+  final DateTime createdAt;
+  const ListTableData({
+    required this.id,
+    required this.name,
+    required this.icon,
+    required this.position,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    map['icon'] = Variable<String>(icon);
+    map['position'] = Variable<int>(position);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  ListTableCompanion toCompanion(bool nullToAbsent) {
+    return ListTableCompanion(
+      id: Value(id),
+      name: Value(name),
+      icon: Value(icon),
+      position: Value(position),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory ListTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ListTableData(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      icon: serializer.fromJson<String>(json['icon']),
+      position: serializer.fromJson<int>(json['position']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'icon': serializer.toJson<String>(icon),
+      'position': serializer.toJson<int>(position),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  ListTableData copyWith({
+    String? id,
+    String? name,
+    String? icon,
+    int? position,
+    DateTime? createdAt,
+  }) => ListTableData(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    icon: icon ?? this.icon,
+    position: position ?? this.position,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  ListTableData copyWithCompanion(ListTableCompanion data) {
+    return ListTableData(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      icon: data.icon.present ? data.icon.value : this.icon,
+      position: data.position.present ? data.position.value : this.position,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ListTableData(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('icon: $icon, ')
+          ..write('position: $position, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, name, icon, position, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ListTableData &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.icon == this.icon &&
+          other.position == this.position &&
+          other.createdAt == this.createdAt);
+}
+
+class ListTableCompanion extends UpdateCompanion<ListTableData> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<String> icon;
+  final Value<int> position;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const ListTableCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.icon = const Value.absent(),
+    this.position = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ListTableCompanion.insert({
+    required String id,
+    required String name,
+    this.icon = const Value.absent(),
+    this.position = const Value.absent(),
+    required DateTime createdAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       name = Value(name),
+       createdAt = Value(createdAt);
+  static Insertable<ListTableData> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<String>? icon,
+    Expression<int>? position,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (icon != null) 'icon': icon,
+      if (position != null) 'position': position,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ListTableCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<String>? icon,
+    Value<int>? position,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return ListTableCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      icon: icon ?? this.icon,
+      position: position ?? this.position,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (icon.present) {
+      map['icon'] = Variable<String>(icon.value);
+    }
+    if (position.present) {
+      map['position'] = Variable<int>(position.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ListTableCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('icon: $icon, ')
+          ..write('position: $position, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $ProductTableTable productTable = $ProductTableTable(this);
+  late final $ListTableTable listTable = $ListTableTable(this);
   late final ProductDao productDao = ProductDao(this as AppDatabase);
+  late final ListDao listDao = ListDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [productTable];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [productTable, listTable];
 }
 
 typedef $$ProductTableTableCreateCompanionBuilder =
@@ -783,6 +1177,7 @@ typedef $$ProductTableTableCreateCompanionBuilder =
       required String createdBy,
       required DateTime createdAt,
       Value<int> position,
+      Value<String> listId,
       Value<bool> dirty,
       Value<bool> deleted,
       required DateTime lastModified,
@@ -800,6 +1195,7 @@ typedef $$ProductTableTableUpdateCompanionBuilder =
       Value<String> createdBy,
       Value<DateTime> createdAt,
       Value<int> position,
+      Value<String> listId,
       Value<bool> dirty,
       Value<bool> deleted,
       Value<DateTime> lastModified,
@@ -854,6 +1250,11 @@ class $$ProductTableTableFilterComposer
 
   ColumnFilters<int> get position => $composableBuilder(
     column: $table.position,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get listId => $composableBuilder(
+    column: $table.listId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -932,6 +1333,11 @@ class $$ProductTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get listId => $composableBuilder(
+    column: $table.listId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get dirty => $composableBuilder(
     column: $table.dirty,
     builder: (column) => ColumnOrderings(column),
@@ -993,6 +1399,9 @@ class $$ProductTableTableAnnotationComposer
   GeneratedColumn<int> get position =>
       $composableBuilder(column: $table.position, builder: (column) => column);
 
+  GeneratedColumn<String> get listId =>
+      $composableBuilder(column: $table.listId, builder: (column) => column);
+
   GeneratedColumn<bool> get dirty =>
       $composableBuilder(column: $table.dirty, builder: (column) => column);
 
@@ -1050,6 +1459,7 @@ class $$ProductTableTableTableManager
                 Value<String> createdBy = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> position = const Value.absent(),
+                Value<String> listId = const Value.absent(),
                 Value<bool> dirty = const Value.absent(),
                 Value<bool> deleted = const Value.absent(),
                 Value<DateTime> lastModified = const Value.absent(),
@@ -1065,6 +1475,7 @@ class $$ProductTableTableTableManager
                 createdBy: createdBy,
                 createdAt: createdAt,
                 position: position,
+                listId: listId,
                 dirty: dirty,
                 deleted: deleted,
                 lastModified: lastModified,
@@ -1082,6 +1493,7 @@ class $$ProductTableTableTableManager
                 required String createdBy,
                 required DateTime createdAt,
                 Value<int> position = const Value.absent(),
+                Value<String> listId = const Value.absent(),
                 Value<bool> dirty = const Value.absent(),
                 Value<bool> deleted = const Value.absent(),
                 required DateTime lastModified,
@@ -1097,6 +1509,7 @@ class $$ProductTableTableTableManager
                 createdBy: createdBy,
                 createdAt: createdAt,
                 position: position,
+                listId: listId,
                 dirty: dirty,
                 deleted: deleted,
                 lastModified: lastModified,
@@ -1129,10 +1542,212 @@ typedef $$ProductTableTableProcessedTableManager =
       ProductTableData,
       PrefetchHooks Function()
     >;
+typedef $$ListTableTableCreateCompanionBuilder =
+    ListTableCompanion Function({
+      required String id,
+      required String name,
+      Value<String> icon,
+      Value<int> position,
+      required DateTime createdAt,
+      Value<int> rowid,
+    });
+typedef $$ListTableTableUpdateCompanionBuilder =
+    ListTableCompanion Function({
+      Value<String> id,
+      Value<String> name,
+      Value<String> icon,
+      Value<int> position,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+class $$ListTableTableFilterComposer
+    extends Composer<_$AppDatabase, $ListTableTable> {
+  $$ListTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get icon => $composableBuilder(
+    column: $table.icon,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get position => $composableBuilder(
+    column: $table.position,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ListTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $ListTableTable> {
+  $$ListTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get icon => $composableBuilder(
+    column: $table.icon,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get position => $composableBuilder(
+    column: $table.position,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ListTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ListTableTable> {
+  $$ListTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get icon =>
+      $composableBuilder(column: $table.icon, builder: (column) => column);
+
+  GeneratedColumn<int> get position =>
+      $composableBuilder(column: $table.position, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$ListTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ListTableTable,
+          ListTableData,
+          $$ListTableTableFilterComposer,
+          $$ListTableTableOrderingComposer,
+          $$ListTableTableAnnotationComposer,
+          $$ListTableTableCreateCompanionBuilder,
+          $$ListTableTableUpdateCompanionBuilder,
+          (
+            ListTableData,
+            BaseReferences<_$AppDatabase, $ListTableTable, ListTableData>,
+          ),
+          ListTableData,
+          PrefetchHooks Function()
+        > {
+  $$ListTableTableTableManager(_$AppDatabase db, $ListTableTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ListTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ListTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ListTableTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> icon = const Value.absent(),
+                Value<int> position = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ListTableCompanion(
+                id: id,
+                name: name,
+                icon: icon,
+                position: position,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String name,
+                Value<String> icon = const Value.absent(),
+                Value<int> position = const Value.absent(),
+                required DateTime createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => ListTableCompanion.insert(
+                id: id,
+                name: name,
+                icon: icon,
+                position: position,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ListTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ListTableTable,
+      ListTableData,
+      $$ListTableTableFilterComposer,
+      $$ListTableTableOrderingComposer,
+      $$ListTableTableAnnotationComposer,
+      $$ListTableTableCreateCompanionBuilder,
+      $$ListTableTableUpdateCompanionBuilder,
+      (
+        ListTableData,
+        BaseReferences<_$AppDatabase, $ListTableTable, ListTableData>,
+      ),
+      ListTableData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
   $$ProductTableTableTableManager get productTable =>
       $$ProductTableTableTableManager(_db, _db.productTable);
+  $$ListTableTableTableManager get listTable =>
+      $$ListTableTableTableManager(_db, _db.listTable);
 }

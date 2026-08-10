@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:lista_familia/database/app_database.dart';
 import 'package:lista_familia/models/product.dart';
+import 'package:lista_familia/models/list_model.dart';
 import 'package:lista_familia/repositories/product_repository.dart';
 import 'package:lista_familia/repositories/local_product_repository.dart';
 import 'package:lista_familia/services/sync_service.dart';
@@ -24,18 +25,18 @@ class ProductRepositoryImpl implements ProductRepository {
   }
 
   @override
-  Stream<List<Product>> watchProducts() {
-    return _local.watchProducts();
+  Stream<List<Product>> watchProducts({String listId = 'supermercado'}) {
+    return _local.watchProducts(listId: listId);
   }
 
   @override
-  Future<List<Product>> getAll() async {
-    return await _local.getAll();
+  Future<List<Product>> getAll({String listId = 'supermercado'}) async {
+    return await _local.getAll(listId: listId);
   }
 
   @override
-  Future<Product> addProduct(String name, String createdBy) async {
-    final product = await _local.addProduct(name, createdBy);
+  Future<Product> addProduct(String name, String createdBy, {String listId = 'supermercado'}) async {
+    final product = await _local.addProduct(name, createdBy, listId: listId);
     _syncService.syncNow();
     return product;
   }
@@ -77,20 +78,20 @@ class ProductRepositoryImpl implements ProductRepository {
   }
 
   @override
-  Future<void> uncheckAll() async {
-    await _local.uncheckAll();
+  Future<void> uncheckAll({String listId = 'supermercado'}) async {
+    await _local.uncheckAll(listId: listId);
     _syncService.syncNow();
   }
 
   @override
-  Future<void> deleteCheckedProducts() async {
-    await _local.deleteCheckedProducts();
+  Future<void> deleteCheckedProducts({String listId = 'supermercado'}) async {
+    await _local.deleteCheckedProducts(listId: listId);
     _syncService.syncNow();
   }
 
   @override
-  Future<void> deleteAllProducts() async {
-    await _local.deleteAllProducts();
+  Future<void> deleteAllProducts({String listId = 'supermercado'}) async {
+    await _local.deleteAllProducts(listId: listId);
     _syncService.syncNow();
   }
 
@@ -119,6 +120,37 @@ class ProductRepositoryImpl implements ProductRepository {
 
   @override
   DateTime? get lastSyncTime => _syncService.lastSyncTime;
+
+  // --- Lists ---
+
+  @override
+  Stream<List<ListModel>> watchLists() {
+    return _local.watchLists();
+  }
+
+  @override
+  Future<List<ListModel>> getAllLists() async {
+    return await _local.getAllLists();
+  }
+
+  @override
+  Future<ListModel> addList(String name, String icon) async {
+    final list = await _local.addList(name, icon);
+    _syncService.syncNow();
+    return list;
+  }
+
+  @override
+  Future<void> updateList(String id, {String? name, String? icon}) async {
+    await _local.updateList(id, name: name, icon: icon);
+    _syncService.syncNow();
+  }
+
+  @override
+  Future<void> deleteList(String id) async {
+    await _local.deleteList(id);
+    _syncService.syncNow();
+  }
 
   LocalProductRepository get local => _local;
 }
