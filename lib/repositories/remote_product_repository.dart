@@ -39,6 +39,10 @@ class RemoteProductRepository {
     await _service.deleteProduct(id);
   }
 
+  Future<void> deleteProductsByList(String listId) async {
+    await _service.deleteProductsByList(listId);
+  }
+
   Stream<List<ListModel>> watchLists() {
     return _service.watchLists();
   }

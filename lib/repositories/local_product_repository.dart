@@ -36,7 +36,11 @@ class LocalProductRepository {
   }
 
   Future<void> syncFromRemote(List<models.Product> remoteProducts) async {
-    final remoteRows = remoteProducts.map((p) => ProductTableData(
+    final deletedListIds = (await _db.listDao.getDeleted()).map((l) => l.id).toSet();
+    final filtered = deletedListIds.isEmpty
+        ? remoteProducts
+        : remoteProducts.where((p) => !deletedListIds.contains(p.listId)).toList();
+    final remoteRows = filtered.map((p) => ProductTableData(
           id: p.id,
           name: p.name,
           isChecked: p.isChecked,
@@ -104,6 +108,10 @@ class LocalProductRepository {
 
   Future<void> updatePosition(String id, int position) async {
     await _db.productDao.updatePosition(id, position);
+  }
+
+  Future<void> updatePositions(List<({String id, int position})> updates) async {
+    await _db.productDao.batchUpdatePositions(updates);
   }
 
   Future<void> deleteProduct(String id) async {

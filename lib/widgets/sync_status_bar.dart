@@ -31,6 +31,11 @@ class SyncStatusBar extends StatelessWidget {
       textColor = AppColors.blueText;
       icon = Icons.sync_rounded;
       text = 'Sincronizando...';
+    } else if (syncStatus == SyncStatus.error) {
+      bgColor = AppColors.errorBg;
+      textColor = AppColors.errorText;
+      icon = Icons.cloud_off_outlined;
+      text = 'Error de sincronizacion';
     } else if (pendingCount > 0) {
       bgColor = AppColors.yellowBg;
       textColor = AppColors.yellowText;

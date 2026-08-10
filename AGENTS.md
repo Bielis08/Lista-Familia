@@ -56,6 +56,9 @@ lib/
 - `lib/services/sync_service.dart` - Sync logic for both products and lists
 - `lib/screens/list_selector_screen.dart` - List management UI
 - `lib/screens/home_screen.dart` - Main product list UI
+- `test/unit/services/update_service_test.dart` - Update system tests (SemVer, check, download)
+- `test/unit/services/sync_service_test.dart` - Sync status/pending tests
+- `test/unit/database/list_dao_test.dart` - List DAO count/soft-deleted queries
 
 ## Commands
 ```bash

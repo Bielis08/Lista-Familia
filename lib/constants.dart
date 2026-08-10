@@ -26,6 +26,8 @@ class AppColors {
   static const Color blueText = Color(0xFF1976D2);
   static const Color yellowBg = Color(0xFFFFF8E1);
   static const Color yellowText = Color(0xFFF9A825);
+  static const Color errorBg = Color(0xFFFDECEA);
+  static const Color errorText = Color(0xFFD32F2F);
   static const Color starYellow = Color(0xFFFFC107);
 
   static const LinearGradient appGradient = LinearGradient(

@@ -239,6 +239,42 @@ void main() {
       final dirtyProd = await db.productDao.getById('local_dirty');
       expect(dirtyProd, isNotNull);
     });
+
+    test('ignores remote products whose list was deleted locally', () async {
+      await db.listDao.insertList(ListTableCompanion(
+        id: const Value('lista_borrada'),
+        name: const Value('Borrada'),
+        createdAt: Value(DateTime.now()),
+        deleted: const Value(true),
+        dirty: const Value(false),
+        lastModified: Value(DateTime.now()),
+        userId: const Value('local_user'),
+      ));
+
+      final remote = [
+        repo.toProduct(ProductTableData(
+          id: 'orphan_1', name: 'Fantasma', isChecked: false,
+          isImportant: false, quantity: 1, createdBy: 'remote',
+          createdAt: DateTime.now(), position: 0, listId: 'lista_borrada',
+          dirty: false, deleted: false, lastModified: DateTime.now(),
+          syncedAt: null, userId: 'remote',
+        )),
+        repo.toProduct(ProductTableData(
+          id: 'normal_1', name: 'Normal', isChecked: false,
+          isImportant: false, quantity: 1, createdBy: 'remote',
+          createdAt: DateTime.now(), position: 0, listId: 'supermercado',
+          dirty: false, deleted: false, lastModified: DateTime.now(),
+          syncedAt: null, userId: 'remote',
+        )),
+      ];
+
+      await repo.syncFromRemote(remote);
+
+      final orphan = await db.productDao.getById('orphan_1');
+      final normal = await db.productDao.getById('normal_1');
+      expect(orphan, isNull);
+      expect(normal, isNotNull);
+    });
   });
 
   group('markSynced / hardDelete', () {

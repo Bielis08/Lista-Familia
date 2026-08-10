@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import '../services/update_service.dart';
 
@@ -25,20 +26,34 @@ class UpdateDialog extends StatefulWidget {
 
 class _UpdateDialogState extends State<UpdateDialog> {
   bool _isDownloading = false;
+  bool _isCancelled = false;
   double _progress = 0.0;
+  CancelToken? _cancelToken;
 
   Future<void> _startDownloadAndInstall() async {
-    if (!mounted) return;
-    setState(() => _isDownloading = true);
+    if (_isDownloading || !mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() {
+      _isDownloading = true;
+      _isCancelled = false;
+      _progress = 0.0;
+    });
+    _cancelToken = CancelToken();
 
     final filePath = await widget.service.downloadApk(
-      widget.release.assetId,
-      (progress) {
+      widget.release.apkUrl,
+      cancelToken: _cancelToken,
+      onProgress: (progress) {
         if (mounted) setState(() => _progress = progress);
       },
     );
 
     if (!mounted) return;
+
+    if (_isCancelled) {
+      setState(() => _isDownloading = false);
+      return;
+    }
 
     if (filePath != null) {
       final installed = await widget.service.installApk(filePath);
@@ -46,27 +61,35 @@ class _UpdateDialogState extends State<UpdateDialog> {
       setState(() => _isDownloading = false);
       if (installed) {
         Navigator.of(context).pop();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Actualizacion instalada. Reinicia la app.'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Actualizacion instalada. Reinicia la app.'),
+            backgroundColor: Colors.green,
+          ),
+        );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(content: Text('Error al instalar la actualizacion')),
         );
       }
     } else {
       setState(() => _isDownloading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error al descargar la actualizacion')),
-        );
-      }
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Error al descargar la actualizacion')),
+      );
     }
+  }
+
+  void _cancelDownload() {
+    if (!_isDownloading) return;
+    _isCancelled = true;
+    _cancelToken?.cancel();
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _isDownloading = false);
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Descarga cancelada')),
+    );
   }
 
   @override
@@ -115,6 +138,11 @@ class _UpdateDialogState extends State<UpdateDialog> {
           ElevatedButton(
             onPressed: _startDownloadAndInstall,
             child: const Text('Actualizar ahora'),
+          ),
+        if (_isDownloading)
+          TextButton(
+            onPressed: _cancelDownload,
+            child: const Text('Cancelar descarga'),
           ),
       ],
     );
