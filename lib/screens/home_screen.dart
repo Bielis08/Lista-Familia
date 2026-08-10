@@ -1,10 +1,15 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../constants.dart';
 import '../models/product.dart';
 import '../repositories/product_repository_impl.dart';
 import '../services/sync_service.dart';
 import '../services/update_service.dart';
+import '../widgets/empty_state.dart';
+import '../widgets/name_quantity_dialog.dart';
 import '../widgets/product_item.dart';
+import '../widgets/sync_status_bar.dart';
+import '../widgets/update_dialog.dart';
 
 class HomeScreen extends StatefulWidget {
   final ProductRepositoryImpl repository;
@@ -15,7 +20,7 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({
     super.key,
     required this.repository,
-    this.listId = 'supermercado',
+    this.listId = defaultListId,
     this.listName = 'Lista de la Compra',
     this.listIcon = '🛒',
   });
@@ -32,6 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isAdding = false;
   bool _isViewMode = true;
   bool _isConnected = true;
+  String _searchQuery = '';
   int _pendingCount = 0;
   SyncStatus _syncStatus = SyncStatus.idle;
   StreamSubscription<List<Product>>? _subscription;
@@ -62,13 +68,15 @@ class _HomeScreenState extends State<HomeScreen> {
     _connectivitySubscription = widget.repository.onConnectivityChanged.listen((connected) {
       if (mounted && _isConnected != connected) {
         setState(() => _isConnected = connected);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(connected ? 'Conexión restaurada' : 'Sin conexión a internet'),
-            backgroundColor: connected ? Colors.green : Colors.orange,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(connected ? 'Conexion restaurada' : 'Sin conexion a internet'),
+              backgroundColor: connected ? Colors.green : Colors.orange,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
       }
     });
   }
@@ -88,15 +96,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _subscribeToChanges() {
-    try {
-      _subscription = widget.repository.watchProducts(listId: widget.listId).listen((products) {
-        if (mounted) {
-          setState(() => _products = products);
-        }
-      });
-    } catch (e) {
-      debugPrint('Watch products error: $e');
-    }
+    _subscription = widget.repository.watchProducts(listId: widget.listId).listen(
+      (products) {
+        if (mounted) setState(() => _products = products);
+      },
+      onError: (Object e) {
+        debugPrint('Watch products error: $e');
+      },
+    );
   }
 
   Future<void> _loadProducts() async {
@@ -120,8 +127,11 @@ class _HomeScreenState extends State<HomeScreen> {
     if (name.isEmpty || _isAdding) return;
     setState(() => _isAdding = true);
     try {
-      await widget.repository.addProduct(name, 'Usuario', listId: widget.listId);
-      if (mounted) _controller.clear();
+      await widget.repository.addProduct(name, defaultUserName, listId: widget.listId);
+      if (mounted) {
+        _controller.clear();
+        FocusScope.of(context).unfocus();
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -135,12 +145,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _toggleProduct(Product product) async {
     final newState = !product.isChecked;
-    setState(() => product.isChecked = newState);
+    final previousProduct = product;
+    setState(() => _products = _products.map(
+      (p) => p.id == product.id ? p.copyWith(isChecked: newState) : p,
+    ).toList());
     try {
       await widget.repository.toggleProduct(product.id, newState);
     } catch (e) {
-      setState(() => product.isChecked = !newState);
       if (mounted) {
+        setState(() => _products = _products.map(
+          (p) => p.id == product.id ? previousProduct : p,
+        ).toList());
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al actualizar: $e')),
         );
@@ -150,12 +165,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _toggleImportant(Product product) async {
     final newState = !product.isImportant;
-    setState(() => product.isImportant = newState);
+    final previousProduct = product;
+    setState(() => _products = _products.map(
+      (p) => p.id == product.id ? p.copyWith(isImportant: newState) : p,
+    ).toList());
     try {
       await widget.repository.toggleImportant(product.id, newState);
     } catch (e) {
-      setState(() => product.isImportant = !newState);
       if (mounted) {
+        setState(() => _products = _products.map(
+          (p) => p.id == product.id ? previousProduct : p,
+        ).toList());
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al actualizar: $e')),
         );
@@ -166,12 +186,17 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _decreaseQuantity(Product product) async {
     if (product.quantity <= 0) return;
     final newQty = product.quantity - 1;
-    setState(() => product.quantity = newQty);
+    final previousProduct = product;
+    setState(() => _products = _products.map(
+      (p) => p.id == product.id ? p.copyWith(quantity: newQty) : p,
+    ).toList());
     try {
       await widget.repository.updateQuantity(product.id, newQty);
     } catch (e) {
-      setState(() => product.quantity = product.quantity + 1);
       if (mounted) {
+        setState(() => _products = _products.map(
+          (p) => p.id == product.id ? previousProduct : p,
+        ).toList());
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al actualizar cantidad: $e')),
         );
@@ -181,12 +206,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _increaseQuantity(Product product) async {
     final newQty = product.quantity + 1;
-    setState(() => product.quantity = newQty);
+    final previousProduct = product;
+    setState(() => _products = _products.map(
+      (p) => p.id == product.id ? p.copyWith(quantity: newQty) : p,
+    ).toList());
     try {
       await widget.repository.updateQuantity(product.id, newQty);
     } catch (e) {
-      setState(() => product.quantity = product.quantity - 1);
       if (mounted) {
+        setState(() => _products = _products.map(
+          (p) => p.id == product.id ? previousProduct : p,
+        ).toList());
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al actualizar cantidad: $e')),
         );
@@ -195,67 +225,34 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _editProduct(Product product) async {
-    final nameController = TextEditingController(text: product.name);
-    final quantityController = TextEditingController(
-      text: product.quantity.toString(),
-    );
-
-    final result = await showDialog<bool>(
+    final result = await showDialog<({String name, String quantity})>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Editar producto'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                labelText: 'Nombre',
-                border: OutlineInputBorder(),
-              ),
-              autofocus: true,
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: quantityController,
-              decoration: const InputDecoration(
-                labelText: 'Cantidad',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.number,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Guardar'),
-          ),
-        ],
+      builder: (context) => NameQuantityDialog(
+        title: 'Editar producto',
+        initialName: product.name,
+        initialQuantity: product.quantity,
       ),
     );
 
-    if (result != true) return;
+    if (result == null) return;
 
-    final newName = nameController.text.trim();
-    final newQuantity = int.tryParse(quantityController.text) ?? product.quantity;
+    final newName = result.name;
+    final newQuantity = int.tryParse(result.quantity) ?? product.quantity;
 
     if (newName.isEmpty) return;
 
-    setState(() {
-      product.name = newName;
-      product.quantity = newQuantity;
-    });
+    final previousProduct = product;
+    setState(() => _products = _products.map(
+      (p) => p.id == product.id ? p.copyWith(name: newName, quantity: newQuantity) : p,
+    ).toList());
 
     try {
       await widget.repository.updateProduct(product.id, newName, newQuantity);
     } catch (e) {
       if (mounted) {
+        setState(() => _products = _products.map(
+          (p) => p.id == product.id ? previousProduct : p,
+        ).toList());
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al editar: $e')),
         );
@@ -265,12 +262,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _deleteProduct(String id) async {
     final removed = _products.where((p) => p.id == id).toList();
-    setState(() => _products.removeWhere((p) => p.id == id));
+    setState(() => _products = _products.where((p) => p.id != id).toList());
     try {
       await widget.repository.deleteProduct(id);
     } catch (e) {
-      setState(() => _products.addAll(removed));
       if (mounted) {
+        setState(() => _products = [..._products, ...removed]);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al eliminar: $e')),
         );
@@ -279,23 +276,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _uncheckAll() async {
-    final checkedProducts = _products.where((p) => p.isChecked).toList();
-    setState(() {
-      for (var product in _products) {
-        product.isChecked = false;
-      }
-    });
+    final previousProducts = List<Product>.from(_products);
+    setState(() => _products = _products.map(
+      (p) => p.copyWith(isChecked: false),
+    ).toList());
     try {
-      for (var product in checkedProducts) {
-        await widget.repository.toggleProduct(product.id, false);
+      for (final p in previousProducts.where((p) => p.isChecked)) {
+        await widget.repository.toggleProduct(p.id, false);
       }
     } catch (e) {
-      setState(() {
-        for (var product in checkedProducts) {
-          product.isChecked = true;
-        }
-      });
       if (mounted) {
+        setState(() => _products = previousProducts);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al desmarcar: $e')),
         );
@@ -308,7 +299,7 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Eliminar todo'),
-        content: const Text('¿Eliminar todos los productos de la lista?'),
+        content: const Text('Eliminar todos los productos de la lista?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -333,8 +324,8 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       await widget.repository.deleteAllProducts();
     } catch (e) {
-      setState(() => _products = all);
       if (mounted) {
+        setState(() => _products = all);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al eliminar todo: $e')),
         );
@@ -344,6 +335,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _reorderProducts(int oldIndex, int newIndex) async {
     if (oldIndex == newIndex) return;
+    final previousProducts = List<Product>.from(_products);
     setState(() {
       final item = _products.removeAt(oldIndex);
       _products.insert(newIndex, item);
@@ -353,8 +345,8 @@ class _HomeScreenState extends State<HomeScreen> {
         await widget.repository.updatePosition(_products[i].id, i);
       }
     } catch (e) {
-      _loadProducts();
       if (mounted) {
+        setState(() => _products = previousProducts);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al reordenar: $e')),
         );
@@ -363,6 +355,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   int get _checkedCount => _products.where((p) => p.isChecked).length;
+
+  List<Product> get _filteredProducts {
+    if (_searchQuery.isEmpty) return _products;
+    return _products
+        .where((p) => p.name.toLowerCase().contains(_searchQuery.toLowerCase()))
+        .toList();
+  }
 
   Future<void> _checkForUpdate() async {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -376,11 +375,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (mounted) {
       if (release != null) {
-        UpdateService.showUpdateDialog(context, release, _updateService);
+        UpdateDialog.show(context, release, _updateService);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Ya tienes la última versión'),
+            content: Text('Ya tienes la ultima version'),
             backgroundColor: Colors.green,
           ),
         );
@@ -388,62 +387,21 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Widget _buildSyncStatusBar() {
-    Color bgColor;
-    Color textColor;
-    IconData icon;
-    String text;
-
-    if (!_isConnected) {
-      bgColor = const Color(0xFFFFF3E0);
-      textColor = const Color(0xFFEF6C00);
-      icon = Icons.wifi_off_rounded;
-      text = 'Sin conexión - se sincronizará al reconectar';
-    } else if (_syncStatus == SyncStatus.syncing) {
-      bgColor = const Color(0xFFE3F2FD);
-      textColor = const Color(0xFF1976D2);
-      icon = Icons.sync_rounded;
-      text = 'Sincronizando...';
-    } else if (_pendingCount > 0) {
-      bgColor = const Color(0xFFFFF8E1);
-      textColor = const Color(0xFFF9A825);
-      icon = Icons.cloud_upload_outlined;
-      text = '$_pendingCount cambios pendientes de subir';
-    } else {
-      bgColor = const Color(0xFFE8F5E9);
-      textColor = const Color(0xFF2E7D32);
-      icon = Icons.cloud_done_outlined;
-      text = 'Todo sincronizado';
-    }
-
-    return Container(
-      width: double.infinity,
-      height: 32,
-      color: bgColor,
-      child: Center(
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (_syncStatus == SyncStatus.syncing)
-              SizedBox(
-                width: 14,
-                height: 14,
-                child: CircularProgressIndicator(strokeWidth: 2, color: textColor),
-              )
-            else
-              Icon(icon, size: 14, color: textColor),
-            const SizedBox(width: 6),
-            Text(
-              text,
-              style: TextStyle(color: textColor, fontSize: 12),
-            ),
-          ],
-        ),
-      ),
+  Widget _buildProductItem(Product product) {
+    return ProductItem(
+      key: ValueKey(product.id),
+      product: product,
+      onToggle: () => _toggleProduct(product),
+      onToggleImportant: () => _toggleImportant(product),
+      onDelete: () => _deleteProduct(product.id),
+      onEdit: () => _editProduct(product),
+      onQuantityDecrease: () => _decreaseQuantity(product),
+      onQuantityIncrease: () => _increaseQuantity(product),
+      isViewMode: _isViewMode,
     );
   }
 
-@override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -452,13 +410,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF2E7D32), Color(0xFF388E3C)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
+          decoration: const BoxDecoration(gradient: AppColors.appGradient),
         ),
         title: Text('${widget.listIcon} ${widget.listName}'),
         actions: [
@@ -469,7 +421,7 @@ class _HomeScreenState extends State<HomeScreen> {
               size: 22,
             ),
             onPressed: () => setState(() => _isViewMode = !_isViewMode),
-            tooltip: _isViewMode ? 'Modo edición' : 'Modo vista',
+            tooltip: _isViewMode ? 'Modo edicion' : 'Modo vista',
           ),
           PopupMenuButton<String>(
             onSelected: (value) {
@@ -524,102 +476,121 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: Column(
+      body: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        color: _isViewMode ? Colors.grey.shade100.withValues(alpha: 0.5) : null,
+        child: Column(
         children: [
-          _buildSyncStatusBar(),
+          SyncStatusBar(
+            isConnected: _isConnected,
+            syncStatus: _syncStatus,
+            pendingCount: _pendingCount,
+          ),
+          if (!_isLoading && _products.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 8, 14, 0),
+              child: TextField(
+                textCapitalization: TextCapitalization.sentences,
+                style: const TextStyle(fontSize: 15),
+                decoration: AppDecorations.searchInputDecoration(
+                  hintText: 'Buscar producto...',
+                  context: context,
+                  prefixIcon: Icon(
+                    Icons.search,
+                    color: Colors.grey.shade400,
+                    size: 20,
+                  ),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: Icon(Icons.clear, color: Colors.grey.shade400, size: 20),
+                          onPressed: () => setState(() => _searchQuery = ''),
+                        )
+                      : null,
+                ),
+                onChanged: (value) => setState(() => _searchQuery = value),
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
             child: Row(
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    enabled: !_isViewMode,
-                    textCapitalization: TextCapitalization.sentences,
-                    style: const TextStyle(fontSize: 15),
-                    decoration: InputDecoration(
-                      hintText: _isViewMode ? 'Modo vista' : 'Añadir producto...',
-                      hintStyle: TextStyle(color: Colors.grey.shade400),
-                      border: InputBorder.none,
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      prefixIcon: Icon(
-                        Icons.shopping_cart_outlined,
-                        color: Colors.grey.shade400,
-                        size: 20,
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(color: Colors.grey.shade200),
-                      ),
-                      disabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(color: Colors.grey.shade200),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(color: Color(0xFF66BB6A), width: 1.5),
-                      ),
-                    ),
-                    onSubmitted: (_) => _addProduct(),
-                  ),
+                  child: _isViewMode
+                      ? TextField(
+                          controller: _controller,
+                          enabled: false,
+                          decoration: AppDecorations.disabledInputDecoration(
+                            hintText: 'Modo vista activo',
+                          ),
+                        )
+                      : TextField(
+                          controller: _controller,
+                          textCapitalization: TextCapitalization.sentences,
+                          style: const TextStyle(fontSize: 15),
+                          decoration: AppDecorations.addProductInputDecoration(
+                            hintText: 'Anadir producto...',
+                          ),
+                          onSubmitted: (_) => _addProduct(),
+                        ),
                 ),
                 const SizedBox(width: 10),
-                GestureDetector(
-                  onTap: _isViewMode ? null : _addProduct,
-                  child: Container(
-                    width: 46,
-                    height: 46,
-                    decoration: BoxDecoration(
-                      color: _isViewMode ? Colors.grey.shade300 : const Color(0xFF43A047),
-                      borderRadius: BorderRadius.circular(14),
+                Material(
+                  color: _isViewMode ? Colors.grey.shade300 : AppColors.accent,
+                  borderRadius: AppRadius.lgAll,
+                  child: InkWell(
+                    onTap: _isViewMode ? null : _addProduct,
+                    borderRadius: AppRadius.lgAll,
+                    child: Container(
+                      width: 46,
+                      height: 46,
+                      decoration: BoxDecoration(
+                        color: _isViewMode ? Colors.grey.shade300 : AppColors.accent,
+                        borderRadius: AppRadius.lgAll,
+                      ),
+                      child: const Icon(Icons.add, color: Colors.white, size: 24),
                     ),
-                    child: const Icon(Icons.add, color: Colors.white, size: 24),
                   ),
                 ),
               ],
             ),
           ),
+          if (_isViewMode)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.visibility_outlined, size: 13, color: Colors.grey.shade400),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Solo lectura',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey.shade400,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           if (_isLoading)
             const Expanded(
               child: Center(child: CircularProgressIndicator()),
             )
           else if (_products.isEmpty)
+            const Expanded(
+              child: EmptyState(
+                icon: Icons.shopping_cart_outlined,
+                title: 'Tu lista esta vacia',
+                subtitle: 'Anade tu primer producto',
+              ),
+            )
+          else if (_filteredProducts.isEmpty && _searchQuery.isNotEmpty)
             Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 100,
-                      height: 100,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFE8F5E9),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.shopping_cart_outlined,
-                        size: 48,
-                        color: Color(0xFF66BB6A),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      'Tu lista está vacía',
-                      style: TextStyle(
-                        color: Color(0xFF424242),
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Añade tu primer producto',
-                      style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
-                    ),
-                  ],
-                ),
+              child: EmptyState(
+                icon: Icons.search_off_rounded,
+                title: 'Sin resultados',
+                subtitle: 'No se encontraron productos para "$_searchQuery"',
               ),
             )
           else
@@ -631,7 +602,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Row(
                       children: [
                         Text(
-                          '${_products.length} productos',
+                          '${_filteredProducts.length} productos',
                           style: TextStyle(
                             color: Colors.grey.shade500,
                             fontSize: 13,
@@ -644,13 +615,13 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFE8F5E9),
+                              color: AppColors.greenBg,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
                               '$_checkedCount marcados',
                               style: const TextStyle(
-                                color: Color(0xFF2E7D32),
+                                color: AppColors.greenText,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -660,53 +631,28 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                   ),
-Expanded(
+                  Expanded(
                     child: _isViewMode
                         ? RefreshIndicator(
                             onRefresh: _loadProducts,
                             child: ListView.builder(
                               padding: const EdgeInsets.only(top: 4, bottom: 80),
-                              itemCount: _products.length,
-                              itemBuilder: (context, index) {
-                                final product = _products[index];
-                                return ProductItem(
-                                  key: ValueKey(product.id),
-                                  product: product,
-                                  onToggle: () => _toggleProduct(product),
-                                  onToggleImportant: () => _toggleImportant(product),
-                                  onDelete: () => _deleteProduct(product.id),
-                                  onEdit: () => _editProduct(product),
-                                  onQuantityDecrease: () => _decreaseQuantity(product),
-                                  onQuantityIncrease: () => _increaseQuantity(product),
-                                  isViewMode: _isViewMode,
-                                );
-                              },
+                              itemCount: _filteredProducts.length,
+                              itemBuilder: (context, index) => _buildProductItem(_filteredProducts[index]),
                             ),
                           )
                         : ReorderableListView.builder(
                             padding: const EdgeInsets.only(top: 4, bottom: 80),
-                            itemCount: _products.length,
+                            itemCount: _filteredProducts.length,
                             onReorderItem: _reorderProducts,
-                            itemBuilder: (context, index) {
-                              final product = _products[index];
-                              return ProductItem(
-                                key: ValueKey(product.id),
-                                product: product,
-                                onToggle: () => _toggleProduct(product),
-                                onToggleImportant: () => _toggleImportant(product),
-                                onDelete: () => _deleteProduct(product.id),
-                                onEdit: () => _editProduct(product),
-                                onQuantityDecrease: () => _decreaseQuantity(product),
-                                onQuantityIncrease: () => _increaseQuantity(product),
-                                isViewMode: _isViewMode,
-                              );
-                            },
+                            itemBuilder: (context, index) => _buildProductItem(_filteredProducts[index]),
                           ),
                   ),
                 ],
               ),
             ),
         ],
+      ),
       ),
     );
   }

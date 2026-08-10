@@ -1,7 +1,7 @@
 name: lista_familia
 description: "Lista de la compra para la familia Montero Román. Permite la sincronización de la lista entre toda la familia."
 publish_to: 'none'
-version: 2.5.0+4
+version: 2.6.0+5
 
 homepage: https://github.com/Bielis08/Lista-Familia
 repository: https://github.com/Bielis08/Lista-Familia

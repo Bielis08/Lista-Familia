@@ -64,6 +64,33 @@ class ProductDao extends DatabaseAccessor<AppDatabase> with _$ProductDaoMixin {
     return into(productTable).insert(product, mode: InsertMode.replace);
   }
 
+  Future<void> upsertBatch(List<ProductTableData> remoteProducts) async {
+    await batch((batch) {
+      for (final remote in remoteProducts) {
+        batch.insert(
+          productTable,
+          ProductTableCompanion(
+            id: Value(remote.id),
+            name: Value(remote.name),
+            isChecked: Value(remote.isChecked),
+            isImportant: Value(remote.isImportant),
+            quantity: Value(remote.quantity),
+            createdBy: Value(remote.createdBy),
+            createdAt: Value(remote.createdAt),
+            position: Value(remote.position),
+            listId: Value(remote.listId),
+            dirty: const Value(false),
+            deleted: const Value(false),
+            lastModified: Value(remote.createdAt),
+            syncedAt: Value(DateTime.now()),
+            userId: Value(remote.createdBy),
+          ),
+          mode: InsertMode.replace,
+        );
+      }
+    });
+  }
+
   Future<void> upsertFromRemote(ProductTableData remote) async {
     final existing = await (select(productTable)..where((p) => p.id.equals(remote.id))).getSingleOrNull();
 
@@ -105,31 +132,19 @@ class ProductDao extends DatabaseAccessor<AppDatabase> with _$ProductDaoMixin {
 
   Future<void> replaceAllFromRemote(List<ProductTableData> remoteProducts) async {
     await transaction(() async {
-      await (delete(productTable)..where((p) => p.dirty.equals(false) & p.deleted.equals(false))).go();
-
-      for (final remote in remoteProducts) {
-        final existing = await (select(productTable)..where((p) => p.id.equals(remote.id))).getSingleOrNull();
-        if (existing == null) {
-          await into(productTable).insert(
-            ProductTableCompanion(
-              id: Value(remote.id),
-              name: Value(remote.name),
-              isChecked: Value(remote.isChecked),
-              isImportant: Value(remote.isImportant),
-              quantity: Value(remote.quantity),
-              createdBy: Value(remote.createdBy),
-              createdAt: Value(remote.createdAt),
-              position: Value(remote.position),
-              listId: Value(remote.listId),
-              dirty: const Value(false),
-              deleted: const Value(false),
-              lastModified: Value(remote.createdAt),
-              syncedAt: Value(DateTime.now()),
-              userId: Value(remote.createdBy),
-            ),
-          );
-        }
-      }
+      final dirtyRows = await (select(productTable)
+            ..where((p) => p.dirty.equals(true)))
+          .get();
+      final dirtyIds = dirtyRows.map((p) => p.id).toSet();
+      final cleanRemote = remoteProducts.where((p) => !dirtyIds.contains(p.id)).toList();
+      await upsertBatch(cleanRemote);
+      final remoteIds = remoteProducts.map((p) => p.id).toSet();
+      await (delete(productTable)
+            ..where((p) =>
+                p.dirty.equals(false) &
+                p.deleted.equals(false) &
+                p.id.isNotIn(remoteIds)))
+          .go();
     });
   }
 
@@ -156,14 +171,14 @@ class ProductDao extends DatabaseAccessor<AppDatabase> with _$ProductDaoMixin {
     });
   }
 
-  Future<void> setDirty(String id, {bool deleted = false}) async {
+  Future<void> setDirty(String id, {required String userId, bool deleted = false}) async {
     final now = DateTime.now();
     await (update(productTable)..where((p) => p.id.equals(id))).write(
       ProductTableCompanion(
         dirty: const Value(true),
         deleted: Value(deleted),
         lastModified: Value(now),
-        userId: const Value('local_user'),
+        userId: Value(userId),
       ),
     );
   }
@@ -175,7 +190,6 @@ class ProductDao extends DatabaseAccessor<AppDatabase> with _$ProductDaoMixin {
         position: Value(position),
         dirty: const Value(true),
         lastModified: Value(now),
-        userId: const Value('local_user'),
       ),
     );
   }
@@ -191,13 +205,31 @@ class ProductDao extends DatabaseAccessor<AppDatabase> with _$ProductDaoMixin {
     final companion = ProductTableCompanion(
       dirty: const Value(true),
       lastModified: Value(now),
-      userId: const Value('local_user'),
       name: name != null ? Value(name) : const Value.absent(),
       quantity: quantity != null ? Value(quantity) : const Value.absent(),
       isChecked: isChecked != null ? Value(isChecked) : const Value.absent(),
       isImportant: isImportant != null ? Value(isImportant) : const Value.absent(),
     );
     await (update(productTable)..where((p) => p.id.equals(id))).write(companion);
+  }
+
+  Future<void> batchUpdateProductFields(List<({String id, bool? isChecked, bool? isImportant, int? quantity})> updates) async {
+    final now = DateTime.now();
+    await batch((batch) {
+      for (final u in updates) {
+        batch.update(
+          productTable,
+          ProductTableCompanion(
+            dirty: const Value(true),
+            lastModified: Value(now),
+            isChecked: u.isChecked != null ? Value(u.isChecked!) : const Value.absent(),
+            isImportant: u.isImportant != null ? Value(u.isImportant!) : const Value.absent(),
+            quantity: u.quantity != null ? Value(u.quantity!) : const Value.absent(),
+          ),
+          where: (p) => p.id.equals(u.id),
+        );
+      }
+    });
   }
 
   Future<void> softDelete(String id) async {
@@ -207,9 +239,25 @@ class ProductDao extends DatabaseAccessor<AppDatabase> with _$ProductDaoMixin {
         deleted: const Value(true),
         dirty: const Value(true),
         lastModified: Value(now),
-        userId: const Value('local_user'),
       ),
     );
+  }
+
+  Future<void> batchSoftDelete(List<String> ids) async {
+    final now = DateTime.now();
+    await batch((batch) {
+      for (final id in ids) {
+        batch.update(
+          productTable,
+          ProductTableCompanion(
+            deleted: const Value(true),
+            dirty: const Value(true),
+            lastModified: Value(now),
+          ),
+          where: (p) => p.id.equals(id),
+        );
+      }
+    });
   }
 
   Future<void> hardDelete(String id) async {
@@ -220,15 +268,20 @@ class ProductDao extends DatabaseAccessor<AppDatabase> with _$ProductDaoMixin {
     await (delete(productTable)..where((p) => p.dirty.equals(false))).go();
   }
 
+  Future<void> deleteByList(String listId) async {
+    await (delete(productTable)..where((p) => p.listId.equals(listId))).go();
+  }
+
   Future<int> count() async {
-    return (select(productTable)..where((p) => p.deleted.equals(false))).get().then((list) => list.length);
+    final result = await (select(productTable)..where((p) => p.deleted.equals(false))).get();
+    return result.length;
   }
 
   Future<int> countByList(String listId) async {
-    return (select(productTable)
+    final result = await (select(productTable)
           ..where((p) => p.deleted.equals(false) & p.listId.equals(listId)))
-        .get()
-        .then((list) => list.length);
+        .get();
+    return result.length;
   }
 
   Future<ProductTableData?> getById(String id) {

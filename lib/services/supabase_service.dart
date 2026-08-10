@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../constants.dart';
 import '../models/product.dart';
 import '../models/list_model.dart';
 
@@ -24,6 +25,7 @@ class SupabaseService {
     required String url,
     required String publishableKey,
   }) async {
+    if (_client != null) return;
     await Supabase.initialize(
       url: url,
       publishableKey: publishableKey,
@@ -41,15 +43,6 @@ class SupabaseService {
         .map((rows) => rows.map(Product.fromMap).toList());
   }
 
-  Stream<List<Product>> watchProductsByList(String listId) {
-    return client
-        .from('products')
-        .stream(primaryKey: ['id'])
-        .eq('list_id', listId)
-        .order('position', ascending: true)
-        .map((rows) => rows.map(Product.fromMap).toList());
-  }
-
   Future<List<Product>> getProducts() async {
     final response = await client
         .from('products')
@@ -58,19 +51,8 @@ class SupabaseService {
     return response.map((row) => Product.fromMap(row as Map<String, dynamic>)).toList();
   }
 
-  Future<List<Product>> getProductsByList(String listId) async {
-    final response = await client
-        .from('products')
-        .select()
-        .eq('list_id', listId)
-        .order('position', ascending: true) as List<dynamic>;
-    return response.map((row) => Product.fromMap(row as Map<String, dynamic>)).toList();
-  }
-
-  Future<Product> addProduct(String name, String createdBy, {String listId = 'supermercado'}) async {
+  Future<Product> addProduct(String name, String createdBy, {String listId = defaultListId}) async {
     final now = DateTime.now().toIso8601String();
-    final countResponse = await client.from('products').select('id').eq('list_id', listId);
-    final count = countResponse.length;
     final data = {
       'id': DateTime.now().millisecondsSinceEpoch.toString(),
       'name': name,
@@ -78,7 +60,7 @@ class SupabaseService {
       'quantity': 1,
       'created_by': createdBy,
       'created_at': now,
-      'position': count,
+      'position': 0,
       'list_id': listId,
     };
     final response = await client.from('products').insert(data).select().maybeSingle();
@@ -88,13 +70,6 @@ class SupabaseService {
     return Product.fromMap(response);
   }
 
-  Future<void> updateProduct(String id, String name, int quantity) async {
-    await client.from('products').update({
-      'name': name,
-      'quantity': quantity,
-    }).eq('id', id);
-  }
-
   Future<void> updateAll(String id, {
     required String name,
     required bool isChecked,
@@ -102,15 +77,21 @@ class SupabaseService {
     required int quantity,
     required int position,
     required String listId,
+    String? createdBy,
+    DateTime? createdAt,
   }) async {
-    await client.from('products').update({
+    final data = <String, dynamic>{
+      'id': id,
       'name': name,
       'is_checked': isChecked,
       'is_important': isImportant,
       'quantity': quantity,
       'position': position,
       'list_id': listId,
-    }).eq('id', id);
+    };
+    if (createdBy != null) data['created_by'] = createdBy;
+    if (createdAt != null) data['created_at'] = createdAt.toIso8601String();
+    await client.from('products').upsert(data, onConflict: 'id');
   }
 
   Future<void> deleteProduct(String id) async {
@@ -137,13 +118,11 @@ class SupabaseService {
 
   Future<ListModel> addList(String name, String icon) async {
     final now = DateTime.now().toIso8601String();
-    final countResponse = await client.from('lists').select('id');
-    final count = countResponse.length;
     final data = {
       'id': name.toLowerCase().replaceAll(' ', '-'),
       'name': name,
       'icon': icon,
-      'position': count,
+      'position': 0,
       'created_at': now,
     };
     final response = await client.from('lists').insert(data).select().maybeSingle();
@@ -153,13 +132,16 @@ class SupabaseService {
     return ListModel.fromMap(response);
   }
 
-  Future<void> updateList(String id, {String? name, String? icon, int? position}) async {
-    final updates = <String, dynamic>{};
-    if (name != null) updates['name'] = name;
-    if (icon != null) updates['icon'] = icon;
-    if (position != null) updates['position'] = position;
-    if (updates.isNotEmpty) {
-      await client.from('lists').update(updates).eq('id', id);
+  Future<void> updateList(String id, {String? name, String? icon, int? position, DateTime? createdAt}) async {
+    final data = <String, dynamic>{
+      'id': id,
+      'name': ?name,
+      'icon': ?icon,
+      'position': ?position,
+      'created_at': ?createdAt?.toIso8601String(),
+    };
+    if (data.length > 1) {
+      await client.from('lists').upsert(data, onConflict: 'id');
     }
   }
 

@@ -10,13 +10,27 @@ class ListDao extends DatabaseAccessor<AppDatabase> with _$ListDaoMixin {
 
   Stream<List<ListTableData>> watchAll() {
     return (select(listTable)
+          ..where((l) => l.deleted.equals(false))
           ..orderBy([(l) => OrderingTerm.asc(l.position)]))
         .watch();
   }
 
   Future<List<ListTableData>> getAll() {
     return (select(listTable)
+          ..where((l) => l.deleted.equals(false))
           ..orderBy([(l) => OrderingTerm.asc(l.position)]))
+        .get();
+  }
+
+  Future<List<ListTableData>> getDirty() {
+    return (select(listTable)
+          ..where((l) => l.dirty.equals(true) & l.deleted.equals(false)))
+        .get();
+  }
+
+  Future<List<ListTableData>> getDeletedDirty() {
+    return (select(listTable)
+          ..where((l) => l.dirty.equals(true) & l.deleted.equals(true)))
         .get();
   }
 
@@ -28,12 +42,24 @@ class ListDao extends DatabaseAccessor<AppDatabase> with _$ListDaoMixin {
     await (update(listTable)..where((l) => l.id.equals(list.id.value))).write(list);
   }
 
-  Future<void> deleteList(String id) async {
+  Future<void> softDelete(String id) async {
+    final now = DateTime.now();
+    await (update(listTable)..where((l) => l.id.equals(id))).write(
+      ListTableCompanion(
+        deleted: const Value(true),
+        dirty: const Value(true),
+        lastModified: Value(now),
+      ),
+    );
+  }
+
+  Future<void> hardDelete(String id) async {
     await (delete(listTable)..where((l) => l.id.equals(id))).go();
   }
 
   Future<int> count() async {
-    return select(listTable).get().then((list) => list.length);
+    final result = await (select(listTable)..where((l) => l.deleted.equals(false))).get();
+    return result.length;
   }
 
   Future<ListTableData?> getById(String id) {
@@ -50,14 +76,22 @@ class ListDao extends DatabaseAccessor<AppDatabase> with _$ListDaoMixin {
           icon: Value(remote.icon),
           position: Value(remote.position),
           createdAt: Value(remote.createdAt),
+          dirty: const Value(false),
+          deleted: const Value(false),
+          lastModified: Value(remote.createdAt),
+          syncedAt: Value(DateTime.now()),
+          userId: const Value('local_user'),
         ),
       );
-    } else {
+    } else if (!existing.dirty) {
       await (update(listTable)..where((l) => l.id.equals(remote.id))).write(
         ListTableCompanion(
           name: Value(remote.name),
           icon: Value(remote.icon),
           position: Value(remote.position),
+          dirty: const Value(false),
+          lastModified: Value(remote.createdAt),
+          syncedAt: Value(DateTime.now()),
         ),
       );
     }
@@ -65,18 +99,25 @@ class ListDao extends DatabaseAccessor<AppDatabase> with _$ListDaoMixin {
 
   Future<void> replaceAllFromRemote(List<ListTableData> remoteLists) async {
     await transaction(() async {
-      await delete(listTable).go();
       for (final remote in remoteLists) {
-        await into(listTable).insert(
-          ListTableCompanion(
-            id: Value(remote.id),
-            name: Value(remote.name),
-            icon: Value(remote.icon),
-            position: Value(remote.position),
-            createdAt: Value(remote.createdAt),
-          ),
-        );
+        await upsertFromRemote(remote);
       }
+      final remoteIds = remoteLists.map((l) => l.id).toSet();
+      await (delete(listTable)
+            ..where((l) =>
+                l.dirty.equals(false) &
+                l.deleted.equals(false) &
+                l.id.isNotIn(remoteIds)))
+          .go();
     });
+  }
+
+  Future<void> markSynced(String id, DateTime syncedAt) async {
+    await (update(listTable)..where((l) => l.id.equals(id))).write(
+      ListTableCompanion(
+        dirty: const Value(false),
+        syncedAt: Value(syncedAt),
+      ),
+    );
   }
 }

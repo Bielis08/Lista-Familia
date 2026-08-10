@@ -28,33 +28,40 @@ void main() async {
   final db = AppDatabase();
   final repository = ProductRepositoryImpl.getInstance(db: db);
 
-  // Initial migration: populate local DB from Supabase if empty
   try {
     final count = await db.productDao.count();
     if (count == 0) {
-      final remoteProducts = await SupabaseService.instance.getProducts();
-      final localProducts = remoteProducts.map((p) => ProductTableData(
-            id: p.id,
-            name: p.name,
-            isChecked: p.isChecked,
-            isImportant: p.isImportant,
-            quantity: p.quantity,
-            createdBy: p.createdBy,
-            createdAt: p.createdAt,
-            position: p.position,
-            listId: p.listId,
-            dirty: false,
-            deleted: false,
-            lastModified: p.createdAt,
-            syncedAt: DateTime.now(),
-            userId: p.createdBy,
-          )).toList();
-      await db.productDao.replaceAllFromRemote(localProducts);
+      try {
+        final remoteProducts = await SupabaseService.instance.getProducts();
+        final localProducts = remoteProducts.map((p) => ProductTableData(
+              id: p.id,
+              name: p.name,
+              isChecked: p.isChecked,
+              isImportant: p.isImportant,
+              quantity: p.quantity,
+              createdBy: p.createdBy,
+              createdAt: p.createdAt,
+              position: p.position,
+              listId: p.listId,
+              dirty: false,
+              deleted: false,
+              lastModified: p.createdAt,
+              syncedAt: DateTime.now(),
+              userId: p.createdBy,
+            )).toList();
+        await db.productDao.replaceAllFromRemote(localProducts);
+      } catch (e) {
+        debugPrint('Migration products error: $e');
+      }
     }
     final listCount = await db.listDao.count();
     if (listCount == 0) {
-      final remoteLists = await SupabaseService.instance.getLists();
-      await repository.local.syncListsFromRemote(remoteLists);
+      try {
+        final remoteLists = await SupabaseService.instance.getLists();
+        await repository.local.syncListsFromRemote(remoteLists);
+      } catch (e) {
+        debugPrint('Migration lists error: $e');
+      }
     }
   } catch (e) {
     debugPrint('Migration error: $e');

@@ -36,7 +36,7 @@ void main() {
 
       expect(product.isChecked, false);
       expect(product.isImportant, false);
-      expect(product.quantity, 0);
+      expect(product.quantity, 1);
       expect(product.createdBy, '');
       expect(product.position, 0);
     });

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:lista_familia/constants.dart';
 import 'package:lista_familia/database/app_database.dart';
 import 'package:lista_familia/models/product.dart';
 import 'package:lista_familia/models/list_model.dart';
@@ -14,9 +15,7 @@ class ProductRepositoryImpl implements ProductRepository {
 
   static ProductRepositoryImpl? _instance;
 
-  static ProductRepositoryImpl getInstance({
-    required AppDatabase db,
-  }) {
+  static ProductRepositoryImpl getInstance({required AppDatabase db}) {
     _instance ??= ProductRepositoryImpl(
       LocalProductRepository(db),
       SyncService(db),
@@ -25,74 +24,74 @@ class ProductRepositoryImpl implements ProductRepository {
   }
 
   @override
-  Stream<List<Product>> watchProducts({String listId = 'supermercado'}) {
+  Stream<List<Product>> watchProducts({String listId = defaultListId}) {
     return _local.watchProducts(listId: listId);
   }
 
   @override
-  Future<List<Product>> getAll({String listId = 'supermercado'}) async {
+  Future<List<Product>> getAll({String listId = defaultListId}) async {
     return await _local.getAll(listId: listId);
   }
 
   @override
-  Future<Product> addProduct(String name, String createdBy, {String listId = 'supermercado'}) async {
+  Future<Product> addProduct(String name, String createdBy, {String listId = defaultListId}) async {
     final product = await _local.addProduct(name, createdBy, listId: listId);
-    _syncService.syncNow();
+    unawaited(_syncService.syncNow());
     return product;
   }
 
   @override
   Future<void> toggleProduct(String id, bool isChecked) async {
     await _local.toggleProduct(id, isChecked);
-    _syncService.syncNow();
+    unawaited(_syncService.syncNow());
   }
 
   @override
   Future<void> toggleImportant(String id, bool isImportant) async {
     await _local.toggleImportant(id, isImportant);
-    _syncService.syncNow();
+    unawaited(_syncService.syncNow());
   }
 
   @override
   Future<void> updateQuantity(String id, int quantity) async {
     await _local.updateQuantity(id, quantity);
-    _syncService.syncNow();
+    unawaited(_syncService.syncNow());
   }
 
   @override
   Future<void> updateProduct(String id, String name, int quantity) async {
     await _local.updateProduct(id, name, quantity);
-    _syncService.syncNow();
+    unawaited(_syncService.syncNow());
   }
 
   @override
   Future<void> updatePosition(String id, int position) async {
     await _local.updatePosition(id, position);
-    _syncService.syncNow();
+    unawaited(_syncService.syncNow());
   }
 
   @override
   Future<void> deleteProduct(String id) async {
     await _local.deleteProduct(id);
-    _syncService.syncNow();
+    unawaited(_syncService.syncNow());
   }
 
   @override
-  Future<void> uncheckAll({String listId = 'supermercado'}) async {
+  Future<void> uncheckAll({String listId = defaultListId}) async {
     await _local.uncheckAll(listId: listId);
-    _syncService.syncNow();
+    unawaited(_syncService.syncNow());
   }
 
   @override
-  Future<void> deleteCheckedProducts({String listId = 'supermercado'}) async {
+  Future<void> deleteCheckedProducts({String listId = defaultListId}) async {
     await _local.deleteCheckedProducts(listId: listId);
-    _syncService.syncNow();
+    unawaited(_syncService.syncNow());
   }
 
   @override
-  Future<void> deleteAllProducts({String listId = 'supermercado'}) async {
+  Future<void> deleteAllProducts({String listId = defaultListId}) async {
     await _local.deleteAllProducts(listId: listId);
-    _syncService.syncNow();
+    unawaited(_syncService.syncNow());
   }
 
   @override
@@ -136,20 +135,20 @@ class ProductRepositoryImpl implements ProductRepository {
   @override
   Future<ListModel> addList(String name, String icon) async {
     final list = await _local.addList(name, icon);
-    _syncService.syncNow();
+    unawaited(_syncService.syncNow());
     return list;
   }
 
   @override
   Future<void> updateList(String id, {String? name, String? icon}) async {
     await _local.updateList(id, name: name, icon: icon);
-    _syncService.syncNow();
+    unawaited(_syncService.syncNow());
   }
 
   @override
   Future<void> deleteList(String id) async {
     await _local.deleteList(id);
-    _syncService.syncNow();
+    unawaited(_syncService.syncNow());
   }
 
   LocalProductRepository get local => _local;

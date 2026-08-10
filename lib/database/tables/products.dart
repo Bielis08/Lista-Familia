@@ -18,5 +18,8 @@ class ProductTable extends Table {
   TextColumn get userId => text()();
 
   @override
+  Set<Column> get primaryKey => {id};
+
+  @override
   String get tableName => 'products';
 }

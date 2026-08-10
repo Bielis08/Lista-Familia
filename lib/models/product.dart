@@ -1,15 +1,17 @@
+import 'package:lista_familia/constants.dart';
+
 class Product {
   final String id;
-  String name;
-  bool isChecked;
-  bool isImportant;
-  int quantity;
+  final String name;
+  final bool isChecked;
+  final bool isImportant;
+  final int quantity;
   final String createdBy;
   final DateTime createdAt;
-  int position;
-  String listId;
+  final int position;
+  final String listId;
 
-  Product({
+  const Product({
     required this.id,
     required this.name,
     this.isChecked = false,
@@ -18,7 +20,7 @@ class Product {
     required this.createdBy,
     required this.createdAt,
     this.position = 0,
-    this.listId = 'supermercado',
+    this.listId = defaultListId,
   });
 
   factory Product.fromMap(Map<String, dynamic> map) {
@@ -27,13 +29,13 @@ class Product {
       name: map['name'] as String,
       isChecked: map['is_checked'] as bool? ?? false,
       isImportant: map['is_important'] as bool? ?? false,
-      quantity: map['quantity'] as int? ?? 0,
+      quantity: map['quantity'] as int? ?? 1,
       createdBy: map['created_by'] as String? ?? '',
       createdAt: map['created_at'] != null
           ? DateTime.parse(map['created_at'] as String)
           : DateTime.now(),
       position: map['position'] as int? ?? 0,
-      listId: map['list_id'] as String? ?? 'supermercado',
+      listId: map['list_id'] as String? ?? defaultListId,
     );
   }
 

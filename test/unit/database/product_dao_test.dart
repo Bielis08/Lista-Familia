@@ -118,7 +118,7 @@ void main() {
 
     test('setDirty marks product as dirty', () async {
       await db.productDao.insertProduct(createTestCompanion(id: '1'));
-      await db.productDao.setDirty('1');
+      await db.productDao.setDirty('1', userId: 'test_user');
 
       final product = await db.productDao.getById('1');
       expect(product!.dirty, true);
@@ -126,7 +126,7 @@ void main() {
 
     test('setDirty with deleted flag', () async {
       await db.productDao.insertProduct(createTestCompanion(id: '1'));
-      await db.productDao.setDirty('1', deleted: true);
+      await db.productDao.setDirty('1', userId: 'test_user', deleted: true);
 
       final product = await db.productDao.getById('1');
       expect(product!.dirty, true);

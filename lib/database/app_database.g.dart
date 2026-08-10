@@ -304,7 +304,7 @@ class $ProductTableTable extends ProductTable
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => const {};
+  Set<GeneratedColumn> get $primaryKey => {id};
   @override
   ProductTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
@@ -862,8 +862,79 @@ class $ListTableTable extends ListTable
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _dirtyMeta = const VerificationMeta('dirty');
   @override
-  List<GeneratedColumn> get $columns => [id, name, icon, position, createdAt];
+  late final GeneratedColumn<bool> dirty = GeneratedColumn<bool>(
+    'dirty',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("dirty" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
+  @override
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _lastModifiedMeta = const VerificationMeta(
+    'lastModified',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastModified = GeneratedColumn<DateTime>(
+    'last_modified',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _syncedAtMeta = const VerificationMeta(
+    'syncedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> syncedAt = GeneratedColumn<DateTime>(
+    'synced_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('local_user'),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    icon,
+    position,
+    createdAt,
+    dirty,
+    deleted,
+    lastModified,
+    syncedAt,
+    userId,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -909,11 +980,46 @@ class $ListTableTable extends ListTable
     } else if (isInserting) {
       context.missing(_createdAtMeta);
     }
+    if (data.containsKey('dirty')) {
+      context.handle(
+        _dirtyMeta,
+        dirty.isAcceptableOrUnknown(data['dirty']!, _dirtyMeta),
+      );
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
+    }
+    if (data.containsKey('last_modified')) {
+      context.handle(
+        _lastModifiedMeta,
+        lastModified.isAcceptableOrUnknown(
+          data['last_modified']!,
+          _lastModifiedMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_lastModifiedMeta);
+    }
+    if (data.containsKey('synced_at')) {
+      context.handle(
+        _syncedAtMeta,
+        syncedAt.isAcceptableOrUnknown(data['synced_at']!, _syncedAtMeta),
+      );
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    }
     return context;
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => const {};
+  Set<GeneratedColumn> get $primaryKey => {id};
   @override
   ListTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
@@ -938,6 +1044,26 @@ class $ListTableTable extends ListTable
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
       )!,
+      dirty: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}dirty'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
+      lastModified: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_modified'],
+      )!,
+      syncedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}synced_at'],
+      ),
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
     );
   }
 
@@ -953,12 +1079,22 @@ class ListTableData extends DataClass implements Insertable<ListTableData> {
   final String icon;
   final int position;
   final DateTime createdAt;
+  final bool dirty;
+  final bool deleted;
+  final DateTime lastModified;
+  final DateTime? syncedAt;
+  final String userId;
   const ListTableData({
     required this.id,
     required this.name,
     required this.icon,
     required this.position,
     required this.createdAt,
+    required this.dirty,
+    required this.deleted,
+    required this.lastModified,
+    this.syncedAt,
+    required this.userId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -968,6 +1104,13 @@ class ListTableData extends DataClass implements Insertable<ListTableData> {
     map['icon'] = Variable<String>(icon);
     map['position'] = Variable<int>(position);
     map['created_at'] = Variable<DateTime>(createdAt);
+    map['dirty'] = Variable<bool>(dirty);
+    map['deleted'] = Variable<bool>(deleted);
+    map['last_modified'] = Variable<DateTime>(lastModified);
+    if (!nullToAbsent || syncedAt != null) {
+      map['synced_at'] = Variable<DateTime>(syncedAt);
+    }
+    map['user_id'] = Variable<String>(userId);
     return map;
   }
 
@@ -978,6 +1121,13 @@ class ListTableData extends DataClass implements Insertable<ListTableData> {
       icon: Value(icon),
       position: Value(position),
       createdAt: Value(createdAt),
+      dirty: Value(dirty),
+      deleted: Value(deleted),
+      lastModified: Value(lastModified),
+      syncedAt: syncedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncedAt),
+      userId: Value(userId),
     );
   }
 
@@ -992,6 +1142,11 @@ class ListTableData extends DataClass implements Insertable<ListTableData> {
       icon: serializer.fromJson<String>(json['icon']),
       position: serializer.fromJson<int>(json['position']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      dirty: serializer.fromJson<bool>(json['dirty']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
+      lastModified: serializer.fromJson<DateTime>(json['lastModified']),
+      syncedAt: serializer.fromJson<DateTime?>(json['syncedAt']),
+      userId: serializer.fromJson<String>(json['userId']),
     );
   }
   @override
@@ -1003,6 +1158,11 @@ class ListTableData extends DataClass implements Insertable<ListTableData> {
       'icon': serializer.toJson<String>(icon),
       'position': serializer.toJson<int>(position),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'dirty': serializer.toJson<bool>(dirty),
+      'deleted': serializer.toJson<bool>(deleted),
+      'lastModified': serializer.toJson<DateTime>(lastModified),
+      'syncedAt': serializer.toJson<DateTime?>(syncedAt),
+      'userId': serializer.toJson<String>(userId),
     };
   }
 
@@ -1012,12 +1172,22 @@ class ListTableData extends DataClass implements Insertable<ListTableData> {
     String? icon,
     int? position,
     DateTime? createdAt,
+    bool? dirty,
+    bool? deleted,
+    DateTime? lastModified,
+    Value<DateTime?> syncedAt = const Value.absent(),
+    String? userId,
   }) => ListTableData(
     id: id ?? this.id,
     name: name ?? this.name,
     icon: icon ?? this.icon,
     position: position ?? this.position,
     createdAt: createdAt ?? this.createdAt,
+    dirty: dirty ?? this.dirty,
+    deleted: deleted ?? this.deleted,
+    lastModified: lastModified ?? this.lastModified,
+    syncedAt: syncedAt.present ? syncedAt.value : this.syncedAt,
+    userId: userId ?? this.userId,
   );
   ListTableData copyWithCompanion(ListTableCompanion data) {
     return ListTableData(
@@ -1026,6 +1196,13 @@ class ListTableData extends DataClass implements Insertable<ListTableData> {
       icon: data.icon.present ? data.icon.value : this.icon,
       position: data.position.present ? data.position.value : this.position,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      dirty: data.dirty.present ? data.dirty.value : this.dirty,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+      lastModified: data.lastModified.present
+          ? data.lastModified.value
+          : this.lastModified,
+      syncedAt: data.syncedAt.present ? data.syncedAt.value : this.syncedAt,
+      userId: data.userId.present ? data.userId.value : this.userId,
     );
   }
 
@@ -1036,13 +1213,29 @@ class ListTableData extends DataClass implements Insertable<ListTableData> {
           ..write('name: $name, ')
           ..write('icon: $icon, ')
           ..write('position: $position, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('dirty: $dirty, ')
+          ..write('deleted: $deleted, ')
+          ..write('lastModified: $lastModified, ')
+          ..write('syncedAt: $syncedAt, ')
+          ..write('userId: $userId')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name, icon, position, createdAt);
+  int get hashCode => Object.hash(
+    id,
+    name,
+    icon,
+    position,
+    createdAt,
+    dirty,
+    deleted,
+    lastModified,
+    syncedAt,
+    userId,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1051,7 +1244,12 @@ class ListTableData extends DataClass implements Insertable<ListTableData> {
           other.name == this.name &&
           other.icon == this.icon &&
           other.position == this.position &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.dirty == this.dirty &&
+          other.deleted == this.deleted &&
+          other.lastModified == this.lastModified &&
+          other.syncedAt == this.syncedAt &&
+          other.userId == this.userId);
 }
 
 class ListTableCompanion extends UpdateCompanion<ListTableData> {
@@ -1060,6 +1258,11 @@ class ListTableCompanion extends UpdateCompanion<ListTableData> {
   final Value<String> icon;
   final Value<int> position;
   final Value<DateTime> createdAt;
+  final Value<bool> dirty;
+  final Value<bool> deleted;
+  final Value<DateTime> lastModified;
+  final Value<DateTime?> syncedAt;
+  final Value<String> userId;
   final Value<int> rowid;
   const ListTableCompanion({
     this.id = const Value.absent(),
@@ -1067,6 +1270,11 @@ class ListTableCompanion extends UpdateCompanion<ListTableData> {
     this.icon = const Value.absent(),
     this.position = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.dirty = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.lastModified = const Value.absent(),
+    this.syncedAt = const Value.absent(),
+    this.userId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ListTableCompanion.insert({
@@ -1075,16 +1283,27 @@ class ListTableCompanion extends UpdateCompanion<ListTableData> {
     this.icon = const Value.absent(),
     this.position = const Value.absent(),
     required DateTime createdAt,
+    this.dirty = const Value.absent(),
+    this.deleted = const Value.absent(),
+    required DateTime lastModified,
+    this.syncedAt = const Value.absent(),
+    this.userId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name),
-       createdAt = Value(createdAt);
+       createdAt = Value(createdAt),
+       lastModified = Value(lastModified);
   static Insertable<ListTableData> custom({
     Expression<String>? id,
     Expression<String>? name,
     Expression<String>? icon,
     Expression<int>? position,
     Expression<DateTime>? createdAt,
+    Expression<bool>? dirty,
+    Expression<bool>? deleted,
+    Expression<DateTime>? lastModified,
+    Expression<DateTime>? syncedAt,
+    Expression<String>? userId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1093,6 +1312,11 @@ class ListTableCompanion extends UpdateCompanion<ListTableData> {
       if (icon != null) 'icon': icon,
       if (position != null) 'position': position,
       if (createdAt != null) 'created_at': createdAt,
+      if (dirty != null) 'dirty': dirty,
+      if (deleted != null) 'deleted': deleted,
+      if (lastModified != null) 'last_modified': lastModified,
+      if (syncedAt != null) 'synced_at': syncedAt,
+      if (userId != null) 'user_id': userId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1103,6 +1327,11 @@ class ListTableCompanion extends UpdateCompanion<ListTableData> {
     Value<String>? icon,
     Value<int>? position,
     Value<DateTime>? createdAt,
+    Value<bool>? dirty,
+    Value<bool>? deleted,
+    Value<DateTime>? lastModified,
+    Value<DateTime?>? syncedAt,
+    Value<String>? userId,
     Value<int>? rowid,
   }) {
     return ListTableCompanion(
@@ -1111,6 +1340,11 @@ class ListTableCompanion extends UpdateCompanion<ListTableData> {
       icon: icon ?? this.icon,
       position: position ?? this.position,
       createdAt: createdAt ?? this.createdAt,
+      dirty: dirty ?? this.dirty,
+      deleted: deleted ?? this.deleted,
+      lastModified: lastModified ?? this.lastModified,
+      syncedAt: syncedAt ?? this.syncedAt,
+      userId: userId ?? this.userId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1133,6 +1367,21 @@ class ListTableCompanion extends UpdateCompanion<ListTableData> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (dirty.present) {
+      map['dirty'] = Variable<bool>(dirty.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
+    if (lastModified.present) {
+      map['last_modified'] = Variable<DateTime>(lastModified.value);
+    }
+    if (syncedAt.present) {
+      map['synced_at'] = Variable<DateTime>(syncedAt.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1147,6 +1396,11 @@ class ListTableCompanion extends UpdateCompanion<ListTableData> {
           ..write('icon: $icon, ')
           ..write('position: $position, ')
           ..write('createdAt: $createdAt, ')
+          ..write('dirty: $dirty, ')
+          ..write('deleted: $deleted, ')
+          ..write('lastModified: $lastModified, ')
+          ..write('syncedAt: $syncedAt, ')
+          ..write('userId: $userId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1549,6 +1803,11 @@ typedef $$ListTableTableCreateCompanionBuilder =
       Value<String> icon,
       Value<int> position,
       required DateTime createdAt,
+      Value<bool> dirty,
+      Value<bool> deleted,
+      required DateTime lastModified,
+      Value<DateTime?> syncedAt,
+      Value<String> userId,
       Value<int> rowid,
     });
 typedef $$ListTableTableUpdateCompanionBuilder =
@@ -1558,6 +1817,11 @@ typedef $$ListTableTableUpdateCompanionBuilder =
       Value<String> icon,
       Value<int> position,
       Value<DateTime> createdAt,
+      Value<bool> dirty,
+      Value<bool> deleted,
+      Value<DateTime> lastModified,
+      Value<DateTime?> syncedAt,
+      Value<String> userId,
       Value<int> rowid,
     });
 
@@ -1592,6 +1856,31 @@ class $$ListTableTableFilterComposer
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get dirty => $composableBuilder(
+    column: $table.dirty,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastModified => $composableBuilder(
+    column: $table.lastModified,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get syncedAt => $composableBuilder(
+    column: $table.syncedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -1629,6 +1918,31 @@ class $$ListTableTableOrderingComposer
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get dirty => $composableBuilder(
+    column: $table.dirty,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastModified => $composableBuilder(
+    column: $table.lastModified,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get syncedAt => $composableBuilder(
+    column: $table.syncedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ListTableTableAnnotationComposer
@@ -1654,6 +1968,23 @@ class $$ListTableTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get dirty =>
+      $composableBuilder(column: $table.dirty, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastModified => $composableBuilder(
+    column: $table.lastModified,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get syncedAt =>
+      $composableBuilder(column: $table.syncedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
 }
 
 class $$ListTableTableTableManager
@@ -1692,6 +2023,11 @@ class $$ListTableTableTableManager
                 Value<String> icon = const Value.absent(),
                 Value<int> position = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<bool> dirty = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<DateTime> lastModified = const Value.absent(),
+                Value<DateTime?> syncedAt = const Value.absent(),
+                Value<String> userId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ListTableCompanion(
                 id: id,
@@ -1699,6 +2035,11 @@ class $$ListTableTableTableManager
                 icon: icon,
                 position: position,
                 createdAt: createdAt,
+                dirty: dirty,
+                deleted: deleted,
+                lastModified: lastModified,
+                syncedAt: syncedAt,
+                userId: userId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -1708,6 +2049,11 @@ class $$ListTableTableTableManager
                 Value<String> icon = const Value.absent(),
                 Value<int> position = const Value.absent(),
                 required DateTime createdAt,
+                Value<bool> dirty = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                required DateTime lastModified,
+                Value<DateTime?> syncedAt = const Value.absent(),
+                Value<String> userId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ListTableCompanion.insert(
                 id: id,
@@ -1715,6 +2061,11 @@ class $$ListTableTableTableManager
                 icon: icon,
                 position: position,
                 createdAt: createdAt,
+                dirty: dirty,
+                deleted: deleted,
+                lastModified: lastModified,
+                syncedAt: syncedAt,
+                userId: userId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

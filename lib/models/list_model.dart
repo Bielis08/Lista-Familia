@@ -1,11 +1,11 @@
 class ListModel {
   final String id;
-  String name;
-  String icon;
-  int position;
+  final String name;
+  final String icon;
+  final int position;
   final DateTime createdAt;
 
-  ListModel({
+  const ListModel({
     required this.id,
     required this.name,
     this.icon = '',

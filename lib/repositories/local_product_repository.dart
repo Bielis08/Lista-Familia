@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:lista_familia/constants.dart';
 import 'package:lista_familia/database/app_database.dart';
 import 'package:lista_familia/models/product.dart' as models;
 import 'package:lista_familia/models/list_model.dart' as list_models;
@@ -8,13 +9,13 @@ class LocalProductRepository {
 
   LocalProductRepository(this._db);
 
-  Stream<List<models.Product>> watchProducts({String listId = 'supermercado'}) {
+  Stream<List<models.Product>> watchProducts({String listId = defaultListId}) {
     return _db.productDao.watchByList(listId).map(
           (rows) => rows.map(toProduct).toList(),
         );
   }
 
-  Future<List<models.Product>> getAll({String listId = 'supermercado'}) async {
+  Future<List<models.Product>> getAll({String listId = defaultListId}) async {
     final rows = await _db.productDao.getAllByList(listId);
     return rows.map(toProduct).toList();
   }
@@ -54,9 +55,9 @@ class LocalProductRepository {
     await _db.productDao.replaceAllFromRemote(remoteRows);
   }
 
-  Future<models.Product> addProduct(String name, String createdBy, {String listId = 'supermercado'}) async {
+  Future<models.Product> addProduct(String name, String createdBy, {String listId = defaultListId}) async {
     final now = DateTime.now();
-    final id = DateTime.now().millisecondsSinceEpoch.toString();
+    final id = '${now.millisecondsSinceEpoch}-${listId.hashCode.toRadixString(16)}';
     final count = await _db.productDao.countByList(listId);
     final companion = ProductTableCompanion(
       id: Value(id),
@@ -109,29 +110,34 @@ class LocalProductRepository {
     await _db.productDao.softDelete(id);
   }
 
-  Future<void> uncheckAll({String listId = 'supermercado'}) async {
+  Future<void> uncheckAll({String listId = defaultListId}) async {
     final products = await _db.productDao.getAllByList(listId);
-    for (final p in products) {
-      if (p.isChecked) {
-        await _db.productDao.updateProductFields(id: p.id, isChecked: false);
-      }
+    final checkedIds = products.where((p) => p.isChecked).map((p) => p.id).toList();
+    if (checkedIds.isNotEmpty) {
+      await _db.productDao.batchUpdateProductFields(
+        checkedIds.map((id) => (id: id, isChecked: false as bool?, isImportant: null as bool?, quantity: null as int?)).toList(),
+      );
     }
   }
 
-  Future<void> deleteCheckedProducts({String listId = 'supermercado'}) async {
+  Future<void> deleteCheckedProducts({String listId = defaultListId}) async {
     final products = await _db.productDao.getAllByList(listId);
-    for (final p in products) {
-      if (p.isChecked) {
-        await _db.productDao.softDelete(p.id);
-      }
+    final checkedIds = products.where((p) => p.isChecked).map((p) => p.id).toList();
+    if (checkedIds.isNotEmpty) {
+      await _db.productDao.batchSoftDelete(checkedIds);
     }
   }
 
-  Future<void> deleteAllProducts({String listId = 'supermercado'}) async {
+  Future<void> deleteAllProducts({String listId = defaultListId}) async {
     final products = await _db.productDao.getAllByList(listId);
-    for (final p in products) {
-      await _db.productDao.softDelete(p.id);
+    final ids = products.map((p) => p.id).toList();
+    if (ids.isNotEmpty) {
+      await _db.productDao.batchSoftDelete(ids);
     }
+  }
+
+  Future<void> deleteProductsByList(String listId) async {
+    await _db.productDao.deleteByList(listId);
   }
 
   Future<void> markSynced(String id) async {
@@ -175,7 +181,7 @@ class LocalProductRepository {
 
   Future<list_models.ListModel> addList(String name, String icon) async {
     final now = DateTime.now();
-    final id = name.toLowerCase().replaceAll(' ', '-');
+    final id = '${name.toLowerCase().replaceAll(' ', '-')}-${now.millisecondsSinceEpoch.toRadixString(36)}';
     final count = await _db.listDao.count();
     final companion = ListTableCompanion(
       id: Value(id),
@@ -183,6 +189,11 @@ class LocalProductRepository {
       icon: Value(icon),
       position: Value(count),
       createdAt: Value(now),
+      dirty: const Value(true),
+      deleted: const Value(false),
+      lastModified: Value(now),
+      syncedAt: const Value(null),
+      userId: const Value(defaultUserId),
     );
     await _db.listDao.insertList(companion);
     return list_models.ListModel(
@@ -195,16 +206,20 @@ class LocalProductRepository {
   }
 
   Future<void> updateList(String id, {String? name, String? icon}) async {
+    final now = DateTime.now();
     final companion = ListTableCompanion(
       id: Value(id),
       name: name != null ? Value(name) : const Value.absent(),
       icon: icon != null ? Value(icon) : const Value.absent(),
+      dirty: const Value(true),
+      lastModified: Value(now),
     );
     await _db.listDao.updateList(companion);
   }
 
   Future<void> deleteList(String id) async {
-    await _db.listDao.deleteList(id);
+    await deleteProductsByList(id);
+    await _db.listDao.softDelete(id);
   }
 
   list_models.ListModel toListModel(ListTableData row) {
@@ -224,7 +239,26 @@ class LocalProductRepository {
           icon: l.icon,
           position: l.position,
           createdAt: l.createdAt,
+          dirty: false,
+          deleted: false,
+          lastModified: l.createdAt,
+          syncedAt: DateTime.now(),
+          userId: defaultUserId,
         )).toList();
     await _db.listDao.replaceAllFromRemote(remoteRows);
+  }
+
+  Future<List<list_models.ListModel>> getDirtyLists() async {
+    final rows = await _db.listDao.getDirty();
+    return rows.map(toListModel).toList();
+  }
+
+  Future<List<list_models.ListModel>> getDeletedDirtyLists() async {
+    final rows = await _db.listDao.getDeletedDirty();
+    return rows.map(toListModel).toList();
+  }
+
+  Future<void> markListSynced(String id) async {
+    await _db.listDao.markSynced(id, DateTime.now());
   }
 }

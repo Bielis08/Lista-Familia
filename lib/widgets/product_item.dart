@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../constants.dart';
 import '../models/product.dart';
 
 class ProductItem extends StatelessWidget {
@@ -28,7 +29,7 @@ class ProductItem extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Eliminar producto'),
-        content: Text('¿Eliminar "${product.name}"?'),
+        content: Text('Eliminar "${product.name}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -52,40 +53,34 @@ class ProductItem extends StatelessWidget {
     final bool isImportant = product.isImportant;
     final bool isChecked = product.isChecked;
 
-    return AnimatedOpacity(
-      opacity: isChecked ? 0.55 : 1.0,
+    final content = AnimatedOpacity(
+      opacity: isChecked ? 0.6 : 1.0,
       duration: const Duration(milliseconds: 250),
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+        margin: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+        decoration: AppDecorations.cardShadow.copyWith(
           border: Border(
             left: BorderSide(
-              color: isImportant ? const Color(0xFF66BB6A) : Colors.transparent,
+              color: isImportant ? AppColors.success : Colors.transparent,
               width: 4,
             ),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm + 2),
           child: Row(
             children: [
-              Checkbox(
-                value: isChecked,
-                onChanged: (_) => onToggle(),
-                activeColor: const Color(0xFF43A047),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                side: BorderSide(color: Colors.grey.shade400),
+              Semantics(
+                label: '${product.name}, ${isChecked ? "marcado" : "no marcado"}',
+                child: Checkbox(
+                  value: isChecked,
+                  onChanged: (_) => onToggle(),
+                  activeColor: AppColors.accent,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                  side: BorderSide(color: Colors.grey.shade400),
+                ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -98,19 +93,20 @@ class ProductItem extends StatelessWidget {
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
                         decoration: isChecked ? TextDecoration.lineThrough : null,
-                        color: isChecked ? Colors.grey : const Color(0xFF212121),
+                        color: isChecked ? Colors.grey : AppColors.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: AppSpacing.xs + 2),
                     Row(
                       children: [
                         if (isViewMode)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.sm + 2,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
-                              color: product.quantity > 0
-                                  ? const Color(0xFFE8F5E9)
-                                  : Colors.grey.shade100,
+                              color: product.quantity > 0 ? AppColors.greenBg : Colors.grey.shade100,
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
@@ -118,23 +114,19 @@ class ProductItem extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
-                                color: product.quantity > 0
-                                    ? const Color(0xFF2E7D32)
-                                    : Colors.grey,
+                                color: product.quantity > 0 ? AppColors.greenText : Colors.grey,
                               ),
                             ),
                           )
                         else ...[
                           _qtyButton(
                             icon: Icons.remove_circle_outline,
-                            color: product.quantity > 0
-                                ? const Color(0xFF43A047)
-                                : Colors.grey.shade400,
-                            onPressed:
-                                product.quantity <= 0 ? null : onQuantityDecrease,
+                            color: product.quantity > 0 ? AppColors.accent : Colors.grey.shade400,
+                            onPressed: product.quantity <= 0 ? null : onQuantityDecrease,
+                            tooltip: 'Disminuir cantidad',
                           ),
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 6),
+                            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs + 2),
                             child: Text(
                               '${product.quantity}',
                               style: const TextStyle(
@@ -145,8 +137,9 @@ class ProductItem extends StatelessWidget {
                           ),
                           _qtyButton(
                             icon: Icons.add_circle_outline,
-                            color: const Color(0xFF43A047),
+                            color: AppColors.accent,
                             onPressed: onQuantityIncrease,
+                            tooltip: 'Aumentar cantidad',
                           ),
                         ],
                       ],
@@ -154,29 +147,38 @@ class ProductItem extends StatelessWidget {
                   ],
                 ),
               ),
-              IconButton(
-                icon: Icon(
-                  isImportant ? Icons.star : Icons.star_border,
-                  color: isImportant ? const Color(0xFFFFC107) : Colors.grey.shade300,
-                  size: 22,
+              Semantics(
+                label: isImportant ? 'Quitar importante' : 'Marcar importante',
+                child: IconButton(
+                  icon: Icon(
+                    isImportant ? Icons.star : Icons.star_border,
+                    color: isImportant ? AppColors.starYellow : Colors.grey.shade300,
+                    size: 22,
+                  ),
+                  onPressed: onToggleImportant,
+                  padding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
                 ),
-                onPressed: onToggleImportant,
-                padding: EdgeInsets.zero,
-                visualDensity: VisualDensity.compact,
               ),
               if (!isViewMode) ...[
                 const SizedBox(width: 2),
-                IconButton(
-                  icon: Icon(Icons.edit_outlined, size: 19, color: Colors.blue.shade400),
-                  onPressed: onEdit,
-                  padding: EdgeInsets.zero,
-                  visualDensity: VisualDensity.compact,
+                Semantics(
+                  label: 'Editar ${product.name}',
+                  child: IconButton(
+                    icon: Icon(Icons.edit_outlined, size: 19, color: Colors.blue.shade400),
+                    onPressed: onEdit,
+                    padding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                  ),
                 ),
-                IconButton(
-                  icon: Icon(Icons.delete_outline, size: 19, color: Colors.red.shade300),
-                  onPressed: () => _confirmDelete(context),
-                  padding: EdgeInsets.zero,
-                  visualDensity: VisualDensity.compact,
+                Semantics(
+                  label: 'Eliminar ${product.name}',
+                  child: IconButton(
+                    icon: Icon(Icons.delete_outline, size: 19, color: Colors.red.shade300),
+                    onPressed: () => _confirmDelete(context),
+                    padding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                  ),
                 ),
               ],
             ],
@@ -184,21 +186,25 @@ class ProductItem extends StatelessWidget {
         ),
       ),
     );
+
+    return content;
   }
 
   Widget _qtyButton({
     required IconData icon,
     required Color color,
     required VoidCallback? onPressed,
+    required String tooltip,
   }) {
     return SizedBox(
-      width: 30,
-      height: 30,
+      width: AppConstraints.minTouchTarget - 18,
+      height: AppConstraints.minTouchTarget - 18,
       child: IconButton(
         icon: Icon(icon, color: color, size: 20),
         onPressed: onPressed,
         padding: EdgeInsets.zero,
         visualDensity: VisualDensity.compact,
+        tooltip: tooltip,
       ),
     );
   }

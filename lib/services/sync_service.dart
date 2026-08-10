@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:lista_familia/database/app_database.dart';
 import 'package:lista_familia/repositories/local_product_repository.dart';
@@ -70,10 +71,12 @@ class SyncService {
             await _updatePendingCount();
           }
         },
-        onError: (_) {},
+        onError: (Object e) {
+          debugPrint('Realtime products error: $e');
+        },
       );
     } catch (e) {
-      // Realtime not available, rely on periodic sync
+      debugPrint('Realtime products setup error: $e');
     }
 
     try {
@@ -87,10 +90,12 @@ class SyncService {
             await _pullRemoteLists();
           }
         },
-        onError: (_) {},
+        onError: (Object e) {
+          debugPrint('Realtime lists error: $e');
+        },
       );
     } catch (e) {
-      // Realtime not available for lists
+      debugPrint('Realtime lists setup error: $e');
     }
   }
 
@@ -120,11 +125,13 @@ class SyncService {
     try {
       await _pushDirtyRecords();
       await _pullRemoteRecords();
+      await _pushDirtyLists();
       await _pullRemoteLists();
       _lastSyncTime = DateTime.now();
       _status = SyncStatus.synced;
       if (!_disposed) _statusController.add(_status);
     } catch (e) {
+      debugPrint('Sync error: $e');
       _status = SyncStatus.error;
       if (!_disposed) _statusController.add(_status);
     } finally {
@@ -138,7 +145,9 @@ class SyncService {
     try {
       final dirty = await _local.getDirty();
       final deleted = await _local.getDeletedDirty();
-      _pendingCount = dirty.length + deleted.length;
+      final dirtyLists = await _local.getDirtyLists();
+      final deletedLists = await _local.getDeletedDirtyLists();
+      _pendingCount = dirty.length + deleted.length + dirtyLists.length + deletedLists.length;
       if (!_disposed) {
         _pendingController.add(_pendingCount);
       }
@@ -153,7 +162,7 @@ class SyncService {
         await _remote.updateAll(product);
         await _local.markSynced(product.id);
       } catch (e) {
-        // Will retry on next sync cycle
+        debugPrint('Push dirty product ${product.id} failed: $e');
       }
     }
 
@@ -163,7 +172,35 @@ class SyncService {
         await _remote.deleteProduct(product.id);
         await _local.hardDelete(product.id);
       } catch (e) {
-        // Will retry on next sync cycle
+        debugPrint('Push deleted product ${product.id} failed: $e');
+      }
+    }
+  }
+
+  Future<void> _pushDirtyLists() async {
+    final dirtyLists = await _local.getDirtyLists();
+    for (final list in dirtyLists) {
+      try {
+        await _remote.updateList(
+          list.id,
+          name: list.name,
+          icon: list.icon,
+          position: list.position,
+          createdAt: list.createdAt,
+        );
+        await _local.markListSynced(list.id);
+      } catch (e) {
+        debugPrint('Push dirty list ${list.id} failed: $e');
+      }
+    }
+
+    final deletedLists = await _local.getDeletedDirtyLists();
+    for (final list in deletedLists) {
+      try {
+        await _remote.deleteList(list.id);
+        await _local.markListSynced(list.id);
+      } catch (e) {
+        debugPrint('Push deleted list ${list.id} failed: $e');
       }
     }
   }
@@ -173,7 +210,7 @@ class SyncService {
       final remoteProducts = await _remote.getAll();
       await _local.syncFromRemote(remoteProducts);
     } catch (e) {
-      // Will retry on next sync cycle
+      debugPrint('Pull remote records failed: $e');
     }
   }
 
@@ -182,7 +219,7 @@ class SyncService {
       final remoteLists = await _remote.getLists();
       await _local.syncListsFromRemote(remoteLists);
     } catch (e) {
-      // Will retry on next sync cycle
+      debugPrint('Pull remote lists failed: $e');
     }
   }
 

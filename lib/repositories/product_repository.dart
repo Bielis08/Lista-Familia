@@ -18,7 +18,6 @@ abstract class ProductRepository {
   Future<void> deleteAllProducts({String listId = 'supermercado'});
   Future<void> syncNow();
 
-  // Lists
   Stream<List<ListModel>> watchLists();
   Future<List<ListModel>> getAllLists();
   Future<ListModel> addList(String name, String icon);

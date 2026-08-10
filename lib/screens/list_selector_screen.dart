@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../constants.dart';
 import '../models/list_model.dart';
 import '../repositories/product_repository_impl.dart';
+import '../widgets/empty_state.dart';
+import '../widgets/name_icon_dialog.dart';
 import 'home_screen.dart';
 
 class ListSelectorScreen extends StatefulWidget {
@@ -32,13 +35,14 @@ class _ListSelectorScreenState extends State<ListSelectorScreen> {
   }
 
   void _subscribeToChanges() {
-    try {
-      _subscription = widget.repository.watchLists().listen((lists) {
+    _subscription = widget.repository.watchLists().listen(
+      (lists) {
         if (mounted) setState(() => _lists = lists);
-      });
-    } catch (e) {
-      debugPrint('Watch lists error: $e');
-    }
+      },
+      onError: (Object e) {
+        debugPrint('Watch lists error: $e');
+      },
+    );
   }
 
   Future<void> _loadLists() async {
@@ -72,55 +76,23 @@ class _ListSelectorScreenState extends State<ListSelectorScreen> {
   }
 
   Future<void> _addList() async {
-    final nameController = TextEditingController();
-    final iconController = TextEditingController(text: '📝');
-
-    final result = await showDialog<bool>(
+    final result = await showDialog<({String name, String icon})>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Nueva lista'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Nombre',
-                border: OutlineInputBorder(),
-              ),
-              autofocus: true,
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: iconController,
-              decoration: const InputDecoration(
-                labelText: 'Icono (emoji)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Crear'),
-          ),
-        ],
+      builder: (context) => const NameIconDialog(
+        title: 'Nueva lista',
+        confirmLabel: 'Crear',
+        initialIcon: defaultListIcon,
       ),
     );
 
-    if (result != true) return;
+    if (result == null) return;
 
-    final name = nameController.text.trim();
-    final icon = iconController.text.trim();
+    final name = result.name;
+    final icon = result.icon;
     if (name.isEmpty) return;
 
     try {
-      await widget.repository.addList(name, icon.isNotEmpty ? icon : '📝');
+      await widget.repository.addList(name, icon.isNotEmpty ? icon : defaultListIcon);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -131,51 +103,20 @@ class _ListSelectorScreenState extends State<ListSelectorScreen> {
   }
 
   Future<void> _editList(ListModel list) async {
-    final nameController = TextEditingController(text: list.name);
-    final iconController = TextEditingController(text: list.icon);
-
-    final result = await showDialog<bool>(
+    final result = await showDialog<({String name, String icon})>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Editar lista'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Nombre',
-                border: OutlineInputBorder(),
-              ),
-              autofocus: true,
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: iconController,
-              decoration: const InputDecoration(
-                labelText: 'Icono (emoji)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Guardar'),
-          ),
-        ],
+      builder: (context) => NameIconDialog(
+        title: 'Editar lista',
+        confirmLabel: 'Guardar',
+        initialName: list.name,
+        initialIcon: list.icon,
       ),
     );
 
-    if (result != true) return;
+    if (result == null) return;
 
-    final name = nameController.text.trim();
-    final icon = iconController.text.trim();
+    final name = result.name;
+    final icon = result.icon;
     if (name.isEmpty) return;
 
     try {
@@ -198,7 +139,7 @@ class _ListSelectorScreenState extends State<ListSelectorScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Eliminar lista'),
-        content: Text('¿Eliminar "${list.name}" y todos sus productos?'),
+        content: Text('Eliminar "${list.name}" y todos sus productos?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -231,97 +172,67 @@ class _ListSelectorScreenState extends State<ListSelectorScreen> {
     return Scaffold(
       appBar: AppBar(
         flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF2E7D32), Color(0xFF388E3C)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
+          decoration: const BoxDecoration(gradient: AppColors.appGradient),
         ),
         title: const Text('Mis Listas'),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _lists.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 100,
-                        height: 100,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFE8F5E9),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.list_alt_rounded,
-                          size: 48,
-                          color: Color(0xFF66BB6A),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      const Text(
-                        'No hay listas',
-                        style: TextStyle(
-                          color: Color(0xFF424242),
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Crea tu primera lista de la compra',
-                        style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
-                      ),
-                    ],
-                  ),
+              ? const EmptyState(
+                  icon: Icons.list_alt_rounded,
+                  title: 'No hay listas',
+                  subtitle: 'Crea tu primera lista de la compra',
                 )
-              : ListView.builder(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  itemCount: _lists.length,
-                  itemBuilder: (context, index) {
-                    final list = _lists[index];
-                    return Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                        leading: Text(
-                          list.icon,
-                          style: const TextStyle(fontSize: 32),
-                        ),
-                        title: Text(
-                          list.name,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
+              : RefreshIndicator(
+                  onRefresh: _loadLists,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    itemCount: _lists.length,
+                    itemBuilder: (context, index) {
+                      final list = _lists[index];
+                      return Card(
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.xl,
+                            vertical: AppSpacing.xs,
                           ),
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit_outlined, size: 20),
-                              onPressed: () => _editList(list),
-                              tooltip: 'Editar',
+                          leading: Text(
+                            list.icon,
+                            style: const TextStyle(fontSize: 32),
+                          ),
+                          title: Text(
+                            list.name,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
-                              onPressed: () => _deleteList(list),
-                              tooltip: 'Eliminar',
-                            ),
-                            const Icon(Icons.chevron_right_rounded),
-                          ],
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit_outlined, size: 20),
+                                onPressed: () => _editList(list),
+                                tooltip: 'Editar',
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                                onPressed: () => _deleteList(list),
+                                tooltip: 'Eliminar',
+                              ),
+                              const Icon(Icons.chevron_right_rounded),
+                            ],
+                          ),
+                          onTap: () => _openList(list),
                         ),
-                        onTap: () => _openList(list),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
       floatingActionButton: FloatingActionButton(
         onPressed: _addList,
-        backgroundColor: const Color(0xFF43A047),
+        backgroundColor: AppColors.accent,
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
