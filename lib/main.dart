@@ -43,6 +43,7 @@ void main() async {
               createdAt: p.createdAt,
               position: p.position,
               listId: p.listId,
+              price: 0.0,
               dirty: false,
               deleted: false,
               lastModified: p.createdAt,

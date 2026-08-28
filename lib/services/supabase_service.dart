@@ -77,6 +77,7 @@ class SupabaseService {
     required int quantity,
     required int position,
     required String listId,
+    required double price,
     String? createdBy,
     DateTime? createdAt,
   }) async {
@@ -88,6 +89,7 @@ class SupabaseService {
       'quantity': quantity,
       'position': position,
       'list_id': listId,
+      'price': price,
     };
     if (createdBy != null) data['created_by'] = createdBy;
     if (createdAt != null) data['created_at'] = createdAt.toIso8601String();

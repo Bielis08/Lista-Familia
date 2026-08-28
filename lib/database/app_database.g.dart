@@ -113,6 +113,16 @@ class $ProductTableTable extends ProductTable
     requiredDuringInsert: false,
     defaultValue: const Constant('supermercado'),
   );
+  static const VerificationMeta _priceMeta = const VerificationMeta('price');
+  @override
+  late final GeneratedColumn<double> price = GeneratedColumn<double>(
+    'price',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
   static const VerificationMeta _dirtyMeta = const VerificationMeta('dirty');
   @override
   late final GeneratedColumn<bool> dirty = GeneratedColumn<bool>(
@@ -183,6 +193,7 @@ class $ProductTableTable extends ProductTable
     createdAt,
     position,
     listId,
+    price,
     dirty,
     deleted,
     lastModified,
@@ -261,6 +272,12 @@ class $ProductTableTable extends ProductTable
       context.handle(
         _listIdMeta,
         listId.isAcceptableOrUnknown(data['list_id']!, _listIdMeta),
+      );
+    }
+    if (data.containsKey('price')) {
+      context.handle(
+        _priceMeta,
+        price.isAcceptableOrUnknown(data['price']!, _priceMeta),
       );
     }
     if (data.containsKey('dirty')) {
@@ -345,6 +362,10 @@ class $ProductTableTable extends ProductTable
         DriftSqlType.string,
         data['${effectivePrefix}list_id'],
       )!,
+      price: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}price'],
+      )!,
       dirty: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}dirty'],
@@ -385,6 +406,7 @@ class ProductTableData extends DataClass
   final DateTime createdAt;
   final int position;
   final String listId;
+  final double price;
   final bool dirty;
   final bool deleted;
   final DateTime lastModified;
@@ -400,6 +422,7 @@ class ProductTableData extends DataClass
     required this.createdAt,
     required this.position,
     required this.listId,
+    required this.price,
     required this.dirty,
     required this.deleted,
     required this.lastModified,
@@ -418,6 +441,7 @@ class ProductTableData extends DataClass
     map['created_at'] = Variable<DateTime>(createdAt);
     map['position'] = Variable<int>(position);
     map['list_id'] = Variable<String>(listId);
+    map['price'] = Variable<double>(price);
     map['dirty'] = Variable<bool>(dirty);
     map['deleted'] = Variable<bool>(deleted);
     map['last_modified'] = Variable<DateTime>(lastModified);
@@ -439,6 +463,7 @@ class ProductTableData extends DataClass
       createdAt: Value(createdAt),
       position: Value(position),
       listId: Value(listId),
+      price: Value(price),
       dirty: Value(dirty),
       deleted: Value(deleted),
       lastModified: Value(lastModified),
@@ -464,6 +489,7 @@ class ProductTableData extends DataClass
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       position: serializer.fromJson<int>(json['position']),
       listId: serializer.fromJson<String>(json['listId']),
+      price: serializer.fromJson<double>(json['price']),
       dirty: serializer.fromJson<bool>(json['dirty']),
       deleted: serializer.fromJson<bool>(json['deleted']),
       lastModified: serializer.fromJson<DateTime>(json['lastModified']),
@@ -484,6 +510,7 @@ class ProductTableData extends DataClass
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'position': serializer.toJson<int>(position),
       'listId': serializer.toJson<String>(listId),
+      'price': serializer.toJson<double>(price),
       'dirty': serializer.toJson<bool>(dirty),
       'deleted': serializer.toJson<bool>(deleted),
       'lastModified': serializer.toJson<DateTime>(lastModified),
@@ -502,6 +529,7 @@ class ProductTableData extends DataClass
     DateTime? createdAt,
     int? position,
     String? listId,
+    double? price,
     bool? dirty,
     bool? deleted,
     DateTime? lastModified,
@@ -517,6 +545,7 @@ class ProductTableData extends DataClass
     createdAt: createdAt ?? this.createdAt,
     position: position ?? this.position,
     listId: listId ?? this.listId,
+    price: price ?? this.price,
     dirty: dirty ?? this.dirty,
     deleted: deleted ?? this.deleted,
     lastModified: lastModified ?? this.lastModified,
@@ -536,6 +565,7 @@ class ProductTableData extends DataClass
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       position: data.position.present ? data.position.value : this.position,
       listId: data.listId.present ? data.listId.value : this.listId,
+      price: data.price.present ? data.price.value : this.price,
       dirty: data.dirty.present ? data.dirty.value : this.dirty,
       deleted: data.deleted.present ? data.deleted.value : this.deleted,
       lastModified: data.lastModified.present
@@ -558,6 +588,7 @@ class ProductTableData extends DataClass
           ..write('createdAt: $createdAt, ')
           ..write('position: $position, ')
           ..write('listId: $listId, ')
+          ..write('price: $price, ')
           ..write('dirty: $dirty, ')
           ..write('deleted: $deleted, ')
           ..write('lastModified: $lastModified, ')
@@ -578,6 +609,7 @@ class ProductTableData extends DataClass
     createdAt,
     position,
     listId,
+    price,
     dirty,
     deleted,
     lastModified,
@@ -597,6 +629,7 @@ class ProductTableData extends DataClass
           other.createdAt == this.createdAt &&
           other.position == this.position &&
           other.listId == this.listId &&
+          other.price == this.price &&
           other.dirty == this.dirty &&
           other.deleted == this.deleted &&
           other.lastModified == this.lastModified &&
@@ -614,6 +647,7 @@ class ProductTableCompanion extends UpdateCompanion<ProductTableData> {
   final Value<DateTime> createdAt;
   final Value<int> position;
   final Value<String> listId;
+  final Value<double> price;
   final Value<bool> dirty;
   final Value<bool> deleted;
   final Value<DateTime> lastModified;
@@ -630,6 +664,7 @@ class ProductTableCompanion extends UpdateCompanion<ProductTableData> {
     this.createdAt = const Value.absent(),
     this.position = const Value.absent(),
     this.listId = const Value.absent(),
+    this.price = const Value.absent(),
     this.dirty = const Value.absent(),
     this.deleted = const Value.absent(),
     this.lastModified = const Value.absent(),
@@ -647,6 +682,7 @@ class ProductTableCompanion extends UpdateCompanion<ProductTableData> {
     required DateTime createdAt,
     this.position = const Value.absent(),
     this.listId = const Value.absent(),
+    this.price = const Value.absent(),
     this.dirty = const Value.absent(),
     this.deleted = const Value.absent(),
     required DateTime lastModified,
@@ -669,6 +705,7 @@ class ProductTableCompanion extends UpdateCompanion<ProductTableData> {
     Expression<DateTime>? createdAt,
     Expression<int>? position,
     Expression<String>? listId,
+    Expression<double>? price,
     Expression<bool>? dirty,
     Expression<bool>? deleted,
     Expression<DateTime>? lastModified,
@@ -686,6 +723,7 @@ class ProductTableCompanion extends UpdateCompanion<ProductTableData> {
       if (createdAt != null) 'created_at': createdAt,
       if (position != null) 'position': position,
       if (listId != null) 'list_id': listId,
+      if (price != null) 'price': price,
       if (dirty != null) 'dirty': dirty,
       if (deleted != null) 'deleted': deleted,
       if (lastModified != null) 'last_modified': lastModified,
@@ -705,6 +743,7 @@ class ProductTableCompanion extends UpdateCompanion<ProductTableData> {
     Value<DateTime>? createdAt,
     Value<int>? position,
     Value<String>? listId,
+    Value<double>? price,
     Value<bool>? dirty,
     Value<bool>? deleted,
     Value<DateTime>? lastModified,
@@ -722,6 +761,7 @@ class ProductTableCompanion extends UpdateCompanion<ProductTableData> {
       createdAt: createdAt ?? this.createdAt,
       position: position ?? this.position,
       listId: listId ?? this.listId,
+      price: price ?? this.price,
       dirty: dirty ?? this.dirty,
       deleted: deleted ?? this.deleted,
       lastModified: lastModified ?? this.lastModified,
@@ -761,6 +801,9 @@ class ProductTableCompanion extends UpdateCompanion<ProductTableData> {
     if (listId.present) {
       map['list_id'] = Variable<String>(listId.value);
     }
+    if (price.present) {
+      map['price'] = Variable<double>(price.value);
+    }
     if (dirty.present) {
       map['dirty'] = Variable<bool>(dirty.value);
     }
@@ -794,6 +837,7 @@ class ProductTableCompanion extends UpdateCompanion<ProductTableData> {
           ..write('createdAt: $createdAt, ')
           ..write('position: $position, ')
           ..write('listId: $listId, ')
+          ..write('price: $price, ')
           ..write('dirty: $dirty, ')
           ..write('deleted: $deleted, ')
           ..write('lastModified: $lastModified, ')
@@ -1432,6 +1476,7 @@ typedef $$ProductTableTableCreateCompanionBuilder =
       required DateTime createdAt,
       Value<int> position,
       Value<String> listId,
+      Value<double> price,
       Value<bool> dirty,
       Value<bool> deleted,
       required DateTime lastModified,
@@ -1450,6 +1495,7 @@ typedef $$ProductTableTableUpdateCompanionBuilder =
       Value<DateTime> createdAt,
       Value<int> position,
       Value<String> listId,
+      Value<double> price,
       Value<bool> dirty,
       Value<bool> deleted,
       Value<DateTime> lastModified,
@@ -1509,6 +1555,11 @@ class $$ProductTableTableFilterComposer
 
   ColumnFilters<String> get listId => $composableBuilder(
     column: $table.listId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get price => $composableBuilder(
+    column: $table.price,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1592,6 +1643,11 @@ class $$ProductTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get price => $composableBuilder(
+    column: $table.price,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get dirty => $composableBuilder(
     column: $table.dirty,
     builder: (column) => ColumnOrderings(column),
@@ -1656,6 +1712,9 @@ class $$ProductTableTableAnnotationComposer
   GeneratedColumn<String> get listId =>
       $composableBuilder(column: $table.listId, builder: (column) => column);
 
+  GeneratedColumn<double> get price =>
+      $composableBuilder(column: $table.price, builder: (column) => column);
+
   GeneratedColumn<bool> get dirty =>
       $composableBuilder(column: $table.dirty, builder: (column) => column);
 
@@ -1714,6 +1773,7 @@ class $$ProductTableTableTableManager
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> position = const Value.absent(),
                 Value<String> listId = const Value.absent(),
+                Value<double> price = const Value.absent(),
                 Value<bool> dirty = const Value.absent(),
                 Value<bool> deleted = const Value.absent(),
                 Value<DateTime> lastModified = const Value.absent(),
@@ -1730,6 +1790,7 @@ class $$ProductTableTableTableManager
                 createdAt: createdAt,
                 position: position,
                 listId: listId,
+                price: price,
                 dirty: dirty,
                 deleted: deleted,
                 lastModified: lastModified,
@@ -1748,6 +1809,7 @@ class $$ProductTableTableTableManager
                 required DateTime createdAt,
                 Value<int> position = const Value.absent(),
                 Value<String> listId = const Value.absent(),
+                Value<double> price = const Value.absent(),
                 Value<bool> dirty = const Value.absent(),
                 Value<bool> deleted = const Value.absent(),
                 required DateTime lastModified,
@@ -1764,6 +1826,7 @@ class $$ProductTableTableTableManager
                 createdAt: createdAt,
                 position: position,
                 listId: listId,
+                price: price,
                 dirty: dirty,
                 deleted: deleted,
                 lastModified: lastModified,

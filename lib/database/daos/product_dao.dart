@@ -79,6 +79,7 @@ class ProductDao extends DatabaseAccessor<AppDatabase> with _$ProductDaoMixin {
             createdAt: Value(remote.createdAt),
             position: Value(remote.position),
             listId: Value(remote.listId),
+            price: Value(remote.price),
             dirty: const Value(false),
             deleted: const Value(false),
             lastModified: Value(remote.createdAt),
@@ -106,6 +107,7 @@ class ProductDao extends DatabaseAccessor<AppDatabase> with _$ProductDaoMixin {
           createdAt: Value(remote.createdAt),
           position: Value(remote.position),
           listId: Value(remote.listId),
+          price: Value(remote.price),
           dirty: const Value(false),
           deleted: const Value(false),
           lastModified: Value(remote.createdAt),
@@ -122,6 +124,7 @@ class ProductDao extends DatabaseAccessor<AppDatabase> with _$ProductDaoMixin {
           quantity: Value(remote.quantity),
           position: Value(remote.position),
           listId: Value(remote.listId),
+          price: Value(remote.price),
           dirty: const Value(false),
           lastModified: Value(remote.createdAt),
           syncedAt: Value(DateTime.now()),
@@ -218,6 +221,7 @@ class ProductDao extends DatabaseAccessor<AppDatabase> with _$ProductDaoMixin {
     int? quantity,
     bool? isChecked,
     bool? isImportant,
+    double? price,
   }) async {
     final now = DateTime.now();
     final companion = ProductTableCompanion(
@@ -227,11 +231,12 @@ class ProductDao extends DatabaseAccessor<AppDatabase> with _$ProductDaoMixin {
       quantity: quantity != null ? Value(quantity) : const Value.absent(),
       isChecked: isChecked != null ? Value(isChecked) : const Value.absent(),
       isImportant: isImportant != null ? Value(isImportant) : const Value.absent(),
+      price: price != null ? Value(price) : const Value.absent(),
     );
     await (update(productTable)..where((p) => p.id.equals(id))).write(companion);
   }
 
-  Future<void> batchUpdateProductFields(List<({String id, bool? isChecked, bool? isImportant, int? quantity})> updates) async {
+  Future<void> batchUpdateProductFields(List<({String id, bool? isChecked, bool? isImportant, int? quantity, double? price})> updates) async {
     final now = DateTime.now();
     await batch((batch) {
       for (final u in updates) {
@@ -243,6 +248,7 @@ class ProductDao extends DatabaseAccessor<AppDatabase> with _$ProductDaoMixin {
             isChecked: u.isChecked != null ? Value(u.isChecked!) : const Value.absent(),
             isImportant: u.isImportant != null ? Value(u.isImportant!) : const Value.absent(),
             quantity: u.quantity != null ? Value(u.quantity!) : const Value.absent(),
+            price: u.price != null ? Value(u.price!) : const Value.absent(),
           ),
           where: (p) => p.id.equals(u.id),
         );

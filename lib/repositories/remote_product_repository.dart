@@ -30,6 +30,7 @@ class RemoteProductRepository {
       quantity: product.quantity,
       position: product.position,
       listId: product.listId,
+      price: product.price,
       createdBy: product.createdBy,
       createdAt: product.createdAt,
     );

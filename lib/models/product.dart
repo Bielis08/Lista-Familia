@@ -10,6 +10,7 @@ class Product {
   final DateTime createdAt;
   final int position;
   final String listId;
+  final double price;
 
   const Product({
     required this.id,
@@ -21,6 +22,7 @@ class Product {
     required this.createdAt,
     this.position = 0,
     this.listId = defaultListId,
+    this.price = 0.0,
   });
 
   factory Product.fromMap(Map<String, dynamic> map) {
@@ -36,6 +38,7 @@ class Product {
           : DateTime.now(),
       position: map['position'] as int? ?? 0,
       listId: map['list_id'] as String? ?? defaultListId,
+      price: (map['price'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
@@ -50,6 +53,7 @@ class Product {
       'created_at': createdAt.toIso8601String(),
       'position': position,
       'list_id': listId,
+      'price': price,
     };
   }
 
@@ -60,6 +64,7 @@ class Product {
     int? quantity,
     int? position,
     String? listId,
+    double? price,
   }) {
     return Product(
       id: id,
@@ -71,6 +76,7 @@ class Product {
       createdAt: createdAt,
       position: position ?? this.position,
       listId: listId ?? this.listId,
+      price: price ?? this.price,
     );
   }
 }

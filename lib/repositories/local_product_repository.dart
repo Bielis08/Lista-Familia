@@ -50,6 +50,7 @@ class LocalProductRepository {
           createdAt: p.createdAt,
           position: p.position,
           listId: p.listId,
+          price: p.price,
           dirty: false,
           deleted: false,
           lastModified: p.createdAt,
@@ -59,7 +60,7 @@ class LocalProductRepository {
     await _db.productDao.replaceAllFromRemote(remoteRows);
   }
 
-  Future<models.Product> addProduct(String name, String createdBy, {String listId = defaultListId}) async {
+  Future<models.Product> addProduct(String name, String createdBy, {String listId = defaultListId, double price = 0.0}) async {
     final now = DateTime.now();
     final id = '${now.millisecondsSinceEpoch}-${listId.hashCode.toRadixString(16)}';
     final count = await _db.productDao.countByList(listId);
@@ -73,6 +74,7 @@ class LocalProductRepository {
       createdAt: Value(now),
       position: Value(count),
       listId: Value(listId),
+      price: Value(price),
       dirty: const Value(true),
       deleted: const Value(false),
       lastModified: Value(now),
@@ -87,6 +89,7 @@ class LocalProductRepository {
       createdAt: now,
       position: count,
       listId: listId,
+      price: price,
     );
   }
 
@@ -102,8 +105,8 @@ class LocalProductRepository {
     await _db.productDao.updateProductFields(id: id, quantity: quantity);
   }
 
-  Future<void> updateProduct(String id, String name, int quantity) async {
-    await _db.productDao.updateProductFields(id: id, name: name, quantity: quantity);
+  Future<void> updateProduct(String id, String name, int quantity, {double price = 0.0}) async {
+    await _db.productDao.updateProductFields(id: id, name: name, quantity: quantity, price: price);
   }
 
   Future<void> updatePosition(String id, int position) async {
@@ -123,7 +126,7 @@ class LocalProductRepository {
     final checkedIds = products.where((p) => p.isChecked).map((p) => p.id).toList();
     if (checkedIds.isNotEmpty) {
       await _db.productDao.batchUpdateProductFields(
-        checkedIds.map((id) => (id: id, isChecked: false as bool?, isImportant: null as bool?, quantity: null as int?)).toList(),
+        checkedIds.map((id) => (id: id, isChecked: false as bool?, isImportant: null as bool?, quantity: null as int?, price: null as double?)).toList(),
       );
     }
   }
@@ -171,6 +174,7 @@ class LocalProductRepository {
       createdAt: row.createdAt,
       position: row.position,
       listId: row.listId,
+      price: row.price,
     );
   }
 

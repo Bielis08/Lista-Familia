@@ -10,6 +10,7 @@ class ProductTable extends Table {
   DateTimeColumn get createdAt => dateTime()();
   IntColumn get position => integer().withDefault(const Constant(0))();
   TextColumn get listId => text().withDefault(const Constant('supermercado'))();
+  RealColumn get price => real().withDefault(const Constant(0.0))();
 
   BoolColumn get dirty => boolean().withDefault(const Constant(false))();
   BoolColumn get deleted => boolean().withDefault(const Constant(false))();

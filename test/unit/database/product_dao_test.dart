@@ -234,6 +234,7 @@ void main() {
         id: 'remote_1', name: 'Remote Product', isChecked: false,
         isImportant: false, quantity: 1, createdBy: 'remote',
         createdAt: DateTime.now(), position: 0, listId: 'supermercado',
+        price: 0.0,
         dirty: false, deleted: false, lastModified: DateTime.now(),
         syncedAt: null, userId: 'remote',
       );
@@ -255,6 +256,7 @@ void main() {
         id: '1', name: 'Remote Updated', isChecked: true,
         isImportant: false, quantity: 5, createdBy: 'remote',
         createdAt: DateTime.now(), position: 2, listId: 'supermercado',
+        price: 0.0,
         dirty: false, deleted: false, lastModified: DateTime.now(),
         syncedAt: null, userId: 'remote',
       );
@@ -276,6 +278,7 @@ void main() {
         id: '1', name: 'Remote', isChecked: false,
         isImportant: false, quantity: 1, createdBy: 'remote',
         createdAt: DateTime.now(), position: 0, listId: 'supermercado',
+        price: 0.0,
         dirty: false, deleted: false, lastModified: DateTime.now(),
         syncedAt: null, userId: 'remote',
       );
@@ -304,6 +307,7 @@ void main() {
           id: 'remote_1', name: 'Remote 1', isChecked: false,
           isImportant: false, quantity: 1, createdBy: 'remote',
           createdAt: DateTime.now(), position: 0, listId: 'supermercado',
+          price: 0.0,
           dirty: false, deleted: false, lastModified: DateTime.now(),
           syncedAt: null, userId: 'remote',
         ),

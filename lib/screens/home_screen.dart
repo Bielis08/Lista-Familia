@@ -228,12 +228,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _editProduct(Product product) async {
-    final result = await showDialog<({String name, String quantity})>(
+    final result = await showDialog<({String name, String quantity, String price})>(
       context: context,
       builder: (context) => NameQuantityDialog(
         title: 'Editar producto',
         initialName: product.name,
         initialQuantity: product.quantity,
+        initialPrice: product.price,
       ),
     );
 
@@ -241,16 +242,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final newName = result.name;
     final newQuantity = int.tryParse(result.quantity) ?? product.quantity;
+    final priceText = result.price.endsWith('.') ? result.price.substring(0, result.price.length - 1) : result.price;
+    final newPrice = priceText.isEmpty ? 0.0 : (double.tryParse(priceText) ?? product.price);
 
     if (newName.isEmpty) return;
 
     final previousProduct = product;
     setState(() => _products = _products.map(
-      (p) => p.id == product.id ? p.copyWith(name: newName, quantity: newQuantity) : p,
+      (p) => p.id == product.id ? p.copyWith(name: newName, quantity: newQuantity, price: newPrice) : p,
     ).toList());
 
     try {
-      await widget.repository.updateProduct(product.id, newName, newQuantity);
+      await widget.repository.updateProduct(product.id, newName, newQuantity, price: newPrice);
     } catch (e) {
       if (mounted) {
         setState(() => _products = _products.map(
@@ -336,10 +339,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _reorderProducts(int oldIndex, int newIndex) async {
     if (oldIndex == newIndex) return;
+    final active = List<Product>.from(_activeProducts);
+    final empty = List<Product>.from(_emptyProducts);
+    final headerIndex = active.length;
+    if (oldIndex == headerIndex || newIndex == headerIndex) return;
+    if (oldIndex >= headerIndex && newIndex >= headerIndex) return;
+    if (oldIndex < headerIndex && newIndex > headerIndex) newIndex = headerIndex;
     final previousProducts = List<Product>.from(_products);
     setState(() {
-      final item = _products.removeAt(oldIndex);
-      _products.insert(newIndex, item);
+      final item = active.removeAt(oldIndex);
+      active.insert(newIndex, item);
+      _products = [...active, ...empty];
     });
     try {
       await widget.repository.updatePositions([
@@ -358,12 +368,33 @@ class _HomeScreenState extends State<HomeScreen> {
 
   int get _checkedCount => _products.where((p) => p.isChecked).length;
 
-  List<Product> get _filteredProducts {
-    if (_searchQuery.isEmpty) return _products;
-    return _products
-        .where((p) => p.name.toLowerCase().contains(_searchQuery.toLowerCase()))
-        .toList();
+  double get _totalPrice {
+    return _filteredProducts.fold(0.0, (sum, p) => sum + (p.price * p.quantity));
   }
+
+  String get _totalPriceLabel {
+    final total = _totalPrice;
+    return total == total.roundToDouble()
+        ? '${total.toStringAsFixed(0)}\u20ac'
+        : '${total.toStringAsFixed(2)}\u20ac';
+  }
+
+  List<Product> get _filteredProducts {
+    final filtered = _searchQuery.isEmpty
+        ? _products
+        : _products
+            .where((p) => p.name.toLowerCase().contains(_searchQuery.toLowerCase()))
+            .toList();
+    final active = filtered.where((p) => p.quantity > 0).toList();
+    final empty = filtered.where((p) => p.quantity == 0).toList();
+    return [...active, ...empty];
+  }
+
+  List<Product> get _activeProducts =>
+      _filteredProducts.where((p) => p.quantity > 0).toList();
+
+  List<Product> get _emptyProducts =>
+      _filteredProducts.where((p) => p.quantity == 0).toList();
 
   Future<void> _checkForUpdate() async {
     if (_isCheckingUpdate) return;
@@ -420,6 +451,58 @@ class _HomeScreenState extends State<HomeScreen> {
       onQuantityIncrease: () => _increaseQuantity(product),
       isViewMode: _isViewMode,
     );
+  }
+
+  Widget _buildSectionHeader() {
+    return IgnorePointer(
+      key: const ValueKey('__section_header__'),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Row(
+          children: [
+            Expanded(
+              child: Divider(
+                color: Colors.grey.shade300,
+                thickness: 1,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Text(
+                'No comprar',
+                style: TextStyle(
+                  color: Colors.grey.shade500,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Divider(
+                color: Colors.grey.shade300,
+                thickness: 1,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildDisplayList() {
+    final items = <Widget>[];
+    for (final p in _activeProducts) {
+      items.add(_buildProductItem(p));
+    }
+    if (_emptyProducts.isNotEmpty) {
+      items.add(_buildSectionHeader());
+      for (final p in _emptyProducts) {
+        items.add(_buildProductItem(p));
+      }
+    }
+    return items;
   }
 
   @override
@@ -634,13 +717,38 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Row(
                       children: [
                         Text(
-                          '${_filteredProducts.length} productos',
+                          '${_activeProducts.length} productos',
                           style: TextStyle(
                             color: Colors.grey.shade500,
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
+                        if (_isViewMode && _totalPrice > 0) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: AppColors.blueBg,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.euro_rounded, size: 14, color: AppColors.blueText),
+                                const SizedBox(width: 3),
+                                Text(
+                                  'Total: $_totalPriceLabel',
+                                  style: const TextStyle(
+                                    color: AppColors.blueText,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                         const Spacer(),
                         Opacity(
                           opacity: _checkedCount > 0 ? 1.0 : 0.0,
@@ -667,17 +775,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: _isViewMode
                         ? RefreshIndicator(
                             onRefresh: _loadProducts,
-                            child: ListView.builder(
+                            child: ListView(
                               padding: const EdgeInsets.only(top: 4, bottom: 80),
-                              itemCount: _filteredProducts.length,
-                              itemBuilder: (context, index) => _buildProductItem(_filteredProducts[index]),
+                              children: _buildDisplayList(),
                             ),
                           )
-                        : ReorderableListView.builder(
+                        : ReorderableListView(
                             padding: const EdgeInsets.only(top: 4, bottom: 80),
-                            itemCount: _filteredProducts.length,
                             onReorderItem: _reorderProducts,
-                            itemBuilder: (context, index) => _buildProductItem(_filteredProducts[index]),
+                            children: _buildDisplayList(),
                           ),
                   ),
                 ],
