@@ -17,7 +17,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -63,6 +63,13 @@ class AppDatabase extends _$AppDatabase {
         }
         if (from < 4) {
           await _recreateWithPrimaryKey(m);
+        }
+        if (from < 5) {
+          if (!await _columnExists(m, 'products', 'price')) {
+            await m.database.customStatement(
+              'ALTER TABLE products ADD COLUMN price REAL NOT NULL DEFAULT 0.0',
+            );
+          }
         }
       });
     },

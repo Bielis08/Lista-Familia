@@ -34,8 +34,8 @@ class ProductRepositoryImpl implements ProductRepository {
   }
 
   @override
-  Future<Product> addProduct(String name, String createdBy, {String listId = defaultListId}) async {
-    final product = await _local.addProduct(name, createdBy, listId: listId);
+  Future<Product> addProduct(String name, String createdBy, {String listId = defaultListId, double price = 0.0}) async {
+    final product = await _local.addProduct(name, createdBy, listId: listId, price: price);
     unawaited(_syncService.syncNow());
     return product;
   }
@@ -59,8 +59,8 @@ class ProductRepositoryImpl implements ProductRepository {
   }
 
   @override
-  Future<void> updateProduct(String id, String name, int quantity) async {
-    await _local.updateProduct(id, name, quantity);
+  Future<void> updateProduct(String id, String name, int quantity, {double price = 0.0}) async {
+    await _local.updateProduct(id, name, quantity, price: price);
     unawaited(_syncService.syncNow());
   }
 

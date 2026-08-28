@@ -144,6 +144,28 @@ class ProductItem extends StatelessWidget {
                         ],
                       ],
                     ),
+                    if (product.price > 0)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.sm + 2,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.blueBg,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            '${_formatPrice(product.price)}\u20ac',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.blueText,
+                            ),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -207,5 +229,12 @@ class ProductItem extends StatelessWidget {
         tooltip: tooltip,
       ),
     );
+  }
+
+  String _formatPrice(double price) {
+    if (price == price.roundToDouble()) {
+      return price.toStringAsFixed(0);
+    }
+    return price.toStringAsFixed(2);
   }
 }
